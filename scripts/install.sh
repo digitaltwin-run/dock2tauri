@@ -55,7 +55,7 @@ install_pkgs_fedora() {
   local SUDO; SUDO=$(need_sudo)
   $SUDO dnf install -y \
     gcc gcc-c++ make pkgconf-pkg-config curl wget ca-certificates \
-    openssl-devel glib2-devel gtk3-devel webkit2gtk3-devel \
+    openssl-devel glib2-devel gtk3-devel webkit2gtk4.0-devel \
     libsoup-devel libappindicator-gtk3-devel librsvg2-devel patchelf
 }
 
