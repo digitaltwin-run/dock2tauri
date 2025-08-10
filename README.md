@@ -92,6 +92,20 @@ If the first argument passed to the script is a path to a `Dockerfile`, the laun
 
 This is handy when you have a static site or custom backend you want to embed. Place your web assets in the `app/` folder (copied into `/usr/share/nginx/html` by the default `Dockerfile`).
 
+##### Building native bundles
+
+To build distributable bundles (dmg/msi/AppImage etc.) instead of launching the dev server, add `--build` (or `-b`). Optionally specify a target triple:
+
+```bash
+# Build for current platform
+./scripts/dock2tauri.sh ./Dockerfile 8088 80 --build
+
+# Cross–compile for Windows 64-bit
+./scripts/dock2tauri.sh ./Dockerfile 8088 80 --build --target=x86_64-pc-windows-gnu
+```
+
+The script calls `cargo tauri build [--target <triple>]` in `src-tauri/` after updating the Tauri config.
+
 #### Method 3: Python Script
 ```bash
 python scripts/dock2tauri.py --image nginx:alpine --host-port 8088 --container-port 80
