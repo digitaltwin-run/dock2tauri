@@ -31,7 +31,7 @@ const logger = {
 };
 
 class Dock2Tauri {
-    constructor(image, hostPort, containerPort) {
+    constructor(image, hostPort, containerPort, buildRelease = false, buildTarget = null) {
         this.image = image || 'nginx:alpine';
         this.hostPort = String(hostPort || 8088);
         this.containerPort = String(containerPort || 80);
@@ -39,6 +39,8 @@ class Dock2Tauri {
         this.containerId = null;
         this.scriptDir = __dirname;
         this.configFile = path.join(this.scriptDir, '..', 'src-tauri', 'tauri.conf.json');
+        this.buildRelease = buildRelease;
+        this.buildTarget = buildTarget;
     }
 
     /**
@@ -268,7 +270,11 @@ class Dock2Tauri {
      * Launch Tauri application
      */
     async launchTauri() {
-        logger.info('Launching Tauri application...');
+        if (this.buildRelease) {
+            logger.info('Building Tauri release bundles (cargo tauri build)...');
+        } else {
+            logger.info('Launching Tauri application (dev)...');
+        }
 
         const tauriDir = path.join(this.scriptDir, '..', 'src-tauri');
         
@@ -279,13 +285,23 @@ class Dock2Tauri {
             // Try Tauri CLI first, then cargo
             let command, args;
             
-            // Check if tauri command exists
-            exec('which tauri', (error) => {
-                if (!error) {
-                    command = 'tauri';
-                    args = ['dev'];
+            // Check if cargo command exists
+            exec('which cargo', (error) => {
+                if (error) {
+                    logger.error('Cargo not found. Please install Rust and Tauri CLI.');
+                    logger.info(`Container is running at: http://localhost:${this.hostPort}`);
+                    logger.info(`Container ID: ${this.containerId}`);
+                    reject(error);
+                    return;
+                }
+
+                command = 'cargo';
+                if (this.buildRelease) {
+                    args = ['tauri', 'build'];
+                    if (this.buildTarget) {
+                        args.push('--target', this.buildTarget);
+                    }
                 } else {
-                    command = 'cargo';
                     args = ['tauri', 'dev'];
                 }
 
@@ -309,6 +325,13 @@ class Dock2Tauri {
                         logger.warning(`Tauri application exited with code ${code}`);
                         resolve(false);
                     }
+                });
+
+                // Handle Ctrl+C gracefully
+                process.on('SIGINT', () => {
+                    logger.info('Application interrupted by user');
+                    tauriProcess.kill('SIGINT');
+                    resolve(true);
                 });
             });
         });
@@ -384,17 +407,21 @@ class Dock2Tauri {
 function showHelp() {
     console.log('Dock2Tauri - Docker to Desktop Bridge');
     console.log('');
-    console.log('Usage: node dock2tauri.js [IMAGE] [HOST_PORT] [CONTAINER_PORT]');
+    console.log('Usage: node dock2tauri.js [IMAGE] [HOST_PORT] [CONTAINER_PORT] [OPTIONS]');
     console.log('');
     console.log('Arguments:');
     console.log('  IMAGE           Docker image to run (default: nginx:alpine)');
     console.log('  HOST_PORT       Host port to bind to (default: 8088)');
     console.log('  CONTAINER_PORT  Container port to expose (default: 80)');
     console.log('');
+    console.log('Options:');
+    console.log('  --build         Build Tauri release bundles instead of running dev mode');
+    console.log('  --target=<triple> Pass target triple to cargo tauri build');
+    console.log('');
     console.log('Examples:');
     console.log('  node dock2tauri.js nginx:alpine 8088 80');
-    console.log('  node dock2tauri.js grafana/grafana 3001 3000');
-    console.log('  node dock2tauri.js jupyter/scipy-notebook 8888 8888');
+    console.log('  node dock2tauri.js grafana/grafana 3001 3000 --build');
+    console.log('  node dock2tauri.js jupyter/scipy-notebook 8888 8888 --target=x86_64-pc-windows-gnu');
     console.log('');
     console.log('Environment Variables:');
     console.log('  DOCK2TAURI_DEBUG=1    Enable debug mode');
@@ -419,23 +446,41 @@ async function main() {
         process.exit(0);
     });
 
-    // Extract arguments
-    const [image, hostPort, containerPort] = args;
+    // Parse flags
+    let buildRelease = false;
+    let buildTarget = null;
+    const positionalArgs = [];
 
-    if (args.length === 0) {
+    for (const arg of args) {
+        if (arg === '--build' || arg === '-b') {
+            buildRelease = true;
+        } else if (arg.startsWith('--target=')) {
+            buildTarget = arg.split('=')[1];
+        } else if (!arg.startsWith('-')) {
+            positionalArgs.push(arg);
+        }
+    }
+
+    // Extract positional arguments
+    const [image, hostPort, containerPort] = positionalArgs;
+
+    if (positionalArgs.length === 0) {
         logger.warning('No arguments provided, using defaults');
     }
 
-    // Enable debug mode if requested
-    if (process.env.DOCK2TAURI_DEBUG === '1') {
-        console.log('Debug mode enabled');
-    }
+    console.log(`${colors.blue}🐳🦀 Dock2Tauri - Docker to Desktop Bridge${colors.reset}`);
+    console.log('==================================================');
 
     // Create and run Dock2Tauri instance
-    const dock2tauri = new Dock2Tauri(image, hostPort, containerPort);
+    const dock2tauri = new Dock2Tauri(image, hostPort, containerPort, buildRelease, buildTarget);
     
-    const success = await dock2tauri.run();
-    process.exit(success ? 0 : 1);
+    try {
+        const success = await dock2tauri.run();
+        process.exit(success ? 0 : 1);
+    } catch (error) {
+        logger.error(`Fatal error: ${error.message}`);
+        process.exit(1);
+    }
 }
 
 // Run main function

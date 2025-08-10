@@ -41,14 +41,17 @@ class Logger:
         print(f"{Colors.YELLOW}⚠️  {message}{Colors.NC}")
 
 class Dock2Tauri:
-    def __init__(self, image, host_port, container_port):
+    def __init__(self, image, host_port, container_port, build_release=False, build_target=None):
         self.image = image
         self.host_port = str(host_port)
         self.container_port = str(container_port)
         self.container_name = f"dock2tauri-{image.replace(':', '-').replace('/', '-')}-{host_port}"
         self.container_id = None
         self.script_dir = Path(__file__).parent
-        self.config_file = self.script_dir.parent / "src-tauri" / "tauri.conf.json"
+        self.base_dir = self.script_dir.parent
+        self.config_file = self.base_dir / "src-tauri" / "tauri.conf.json"
+        self.build_release = build_release
+        self.build_target = build_target
 
     def check_dependencies(self):
         """Check if required dependencies are available."""
@@ -218,20 +221,30 @@ class Dock2Tauri:
 
     def launch_tauri(self):
         """Launch the Tauri application."""
-        Logger.info("Launching Tauri application...")
+        if self.build_release:
+            Logger.info("Building Tauri release bundles (cargo tauri build)...")
+        else:
+            Logger.info("Launching Tauri application (dev)...")
         
         tauri_dir = self.script_dir.parent / "src-tauri"
         
         try:
             os.chdir(tauri_dir)
             
-            # Try Tauri CLI first
-            if self._command_exists("tauri"):
-                subprocess.run(["tauri", "dev"], check=True)
-            elif self._command_exists("cargo"):
-                subprocess.run(["cargo", "tauri", "dev"], check=True)
+            # Build command based on flags
+            if self.build_release:
+                if self.build_target:
+                    cmd = ["cargo", "tauri", "build", "--target", self.build_target]
+                else:
+                    cmd = ["cargo", "tauri", "build"]
             else:
-                Logger.error("Neither Tauri CLI nor Cargo found. Please install Rust and Tauri CLI.")
+                cmd = ["cargo", "tauri", "dev"]
+            
+            # Try Tauri CLI first
+            if self._command_exists("cargo"):
+                subprocess.run(cmd, check=True)
+            else:
+                Logger.error("Cargo not found. Please install Rust and Tauri CLI.")
                 Logger.info(f"Container is running at: http://localhost:{self.host_port}")
                 Logger.info(f"Container ID: {self.container_id}")
                 return False
@@ -317,6 +330,15 @@ def main():
         help="Container port to expose (default: 80)"
     )
     parser.add_argument(
+        "--build",
+        action="store_true",
+        help="Build Tauri application"
+    )
+    parser.add_argument(
+        "--target",
+        help="Build target for Tauri application"
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug mode"
@@ -329,7 +351,7 @@ def main():
         logging.basicConfig(level=logging.DEBUG)
     
     # Create and run Dock2Tauri instance
-    dock2tauri = Dock2Tauri(args.image, args.host_port, args.container_port)
+    dock2tauri = Dock2Tauri(args.image, args.host_port, args.container_port, args.build, args.target)
     
     success = dock2tauri.run()
     sys.exit(0 if success else 1)

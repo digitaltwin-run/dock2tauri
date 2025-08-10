@@ -3,29 +3,27 @@
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "distDir": "../app",
-    "devPath": "http://localhost:8088"
+    "frontendDist": "../app",
+    "devUrl": "http://localhost:8088"
   },
-  "package": {
-    "productName": "Dock2Tauri - dock2tauri-local-dockerfile-1754828951",
-    "version": "1.0.0"
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": false,
+    "publisher": "Dock2Tauri",
+    "copyright": "Copyright (c) 2025",
+    "category": "DeveloperTool",
+    "shortDescription": "Docker App in Tauri",
+    "longDescription": "Running nginx:alpine as desktop application"
   },
-  "tauri": {
-    "bundle": {
-      "identifier": "com.dock2tauri.dock2taurilocaldockerfile1754828951",
-      "targets": [
-        "appimage",
-        "deb",
-        "rpm"
-      ],
-      "icon": [],
-      "category": "Utility",
-      "shortDescription": "Docker to Desktop Bridge",
-      "longDescription": "Transform any Docker container into a native desktop application using Tauri"
-    },
+  "productName": "Dock2Tauri - nginx",
+  "version": "1.0.0",
+  "identifier": "com.dock2tauri.nginxalpine",
+  "plugins": {},
+  "app": {
     "windows": [
       {
-        "title": "Dock2Tauri - dock2tauri-local-dockerfile-1754828951",
+        "title": "Dock2Tauri - nginx:alpine",
         "width": 1200,
         "height": 800,
         "minWidth": 600,
@@ -37,6 +35,5 @@
     "security": {
       "csp": null
     }
-  },
-  "plugins": {}
+  }
 }
