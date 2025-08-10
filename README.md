@@ -31,6 +31,39 @@ cd dock2tauri
 make install
 ```
 
+### Automated installer (scripts/install.sh)
+
+If you prefer a single script to prepare your environment (system packages, Rust + Tauri CLI, and optionally Docker), use the installer:
+
+```bash
+# Install all dev dependencies required by Tauri/WebKitGTK
+./scripts/install.sh
+
+# Additionally install and enable Docker, and add current user to the docker group
+./scripts/install.sh --with-docker
+```
+
+What it does
+- Detects distro (Debian/Ubuntu, Fedora/RHEL, Arch/Manjaro)
+- Installs system dev packages: GTK3, WebKit2GTK, libsoup2.4, JavaScriptCoreGTK, OpenSSL, build tools, patchelf
+- Installs Rust (rustup) and Tauri CLI (cargo)
+- Optionally installs and enables Docker; adds your user to the docker group
+
+After installation
+- If Docker group membership was changed, re-login or run: `newgrp docker`
+- Verify tools:
+  - `docker --version`
+  - `cargo --version`
+  - `tauri --version`
+
+Troubleshooting
+- If Tauri build complains about missing `.pc` files (e.g. `libsoup-2.4.pc`, `javascriptcoregtk-4.0.pc`), ensure the dev packages above are installed by the script.
+- For non-standard installations, set `PKG_CONFIG_PATH` to include the directory with the `.pc` files, e.g.:
+
+```bash
+export PKG_CONFIG_PATH=/custom/pc/dir:$PKG_CONFIG_PATH
+```
+
 ### Usage
 
 #### Method 1: Makefile Commands
