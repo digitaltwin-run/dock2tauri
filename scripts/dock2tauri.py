@@ -4,7 +4,7 @@
 Dock2Tauri Python Launcher
 Transform any Docker container into a native desktop application using Tauri.
 
-Usage: python dock2tauri.py --image nginx:alpine --host-port 8080 --container-port 80
+Usage: python dock2tauri.py --image nginx:alpine --host-port 8088 --container-port 80
 """
 
 import argparse
@@ -307,8 +307,8 @@ def main():
     parser.add_argument(
         "--host-port", "-p",
         type=int,
-        default=8080,
-        help="Host port to bind to (default: 8080)"
+        default=8088,
+        help="Host port to bind to (default: 8088)"
     )
     parser.add_argument(
         "--container-port", "-c",

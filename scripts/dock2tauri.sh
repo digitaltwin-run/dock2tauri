@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 DOCKER_IMAGE="${1:-nginx:alpine}"
-HOST_PORT="${2:-8080}"
+HOST_PORT="${2:-8088}"
 CONTAINER_PORT="${3:-80}"
 CONTAINER_NAME="dock2tauri-$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]/-/g')-$HOST_PORT"
 
@@ -78,18 +78,22 @@ launch_container() {
     log_info "Host Port: $HOST_PORT"
     log_info "Container Port: $CONTAINER_PORT"
     
-    CONTAINER_ID=$(docker run -d \
+    # Launch container with error capture
+    set +e
+    RESULT=$(docker run -d \
         -p "$HOST_PORT:$CONTAINER_PORT" \
         --name "$CONTAINER_NAME" \
         --restart unless-stopped \
-        "$DOCKER_IMAGE" 2>/dev/null)
-    
-    if [ $? -eq 0 ]; then
+        "$DOCKER_IMAGE" 2>&1)
+    RC=$?
+    set -e
+    if [ $RC -eq 0 ]; then
+        CONTAINER_ID="$RESULT"
         log_success "Container launched: $CONTAINER_ID"
         log_success "Access at: http://localhost:$HOST_PORT"
     else
-        log_error "Failed to launch container"
-        exit 1
+        log_error "Failed to launch container: $RESULT"
+        exit $RC
     fi
 }
 
@@ -222,11 +226,11 @@ show_help() {
     echo ""
     echo "Arguments:"
     echo "  IMAGE           Docker image to run (default: nginx:alpine)"
-    echo "  HOST_PORT       Host port to bind to (default: 8080)"
+    echo "  HOST_PORT       Host port to bind to (default: 8088)"
     echo "  CONTAINER_PORT  Container port to expose (default: 80)"
     echo ""
     echo "Examples:"
-    echo "  $0 nginx:alpine 8080 80"
+    echo "  $0 nginx:alpine 8088 80"
     echo "  $0 grafana/grafana 3001 3000"
     echo "  $0 jupyter/scipy-notebook 8888 8888"
     echo ""

@@ -26,7 +26,7 @@ Dock2Tauri is a lightweight bridge that allows you to run any Docker container a
 ### Installation
 
 ```bash
-git clone <repository>
+git clone https://github.com/digitaltwin-run/dock2tauri.git
 cd dock2tauri
 make install
 ```
@@ -42,22 +42,22 @@ make nginx
 make grafana
 
 # Launch custom container
-make launch IMAGE=my-app:latest HOST_PORT=8080 CONTAINER_PORT=80
+make launch IMAGE=my-app:latest HOST_PORT=8088 CONTAINER_PORT=80
 ```
 
 #### Method 2: Bash Script
 ```bash
-./scripts/dock2tauri.sh nginx:alpine 8080 80
+./scripts/dock2tauri.sh nginx:alpine 8088 80
 ```
 
 #### Method 3: Python Script
 ```bash
-python scripts/dock2tauri.py --image nginx:alpine --host-port 8080 --container-port 80
+python scripts/dock2tauri.py --image nginx:alpine --host-port 8088 --container-port 80
 ```
 
 #### Method 4: Node.js Script
 ```bash
-node scripts/dock2tauri.js nginx:alpine 8080 80
+node scripts/dock2tauri.js nginx:alpine 8088 80
 ```
 
 #### Method 5: Control Panel (Development Mode)
@@ -69,7 +69,7 @@ make dev
 
 | Service | Command | Description |
 |---------|---------|-------------|
-| **Nginx** | `make nginx` | Web server on port 8080 |
+| **Nginx** | `make nginx` | Web server on port 8088 |
 | **Grafana** | `make grafana` | Analytics dashboard on port 3001 |
 | **Jupyter** | `make jupyter` | Notebook server on port 8888 |
 | **Portainer** | `make portainer` | Docker UI on port 9000 |
@@ -107,7 +107,7 @@ Create a `dock2tauri.conf.json`:
     "my-app": {
       "image": "my-custom-app:latest",
       "hostPort": 3000,
-      "containerPort": 8080,
+      "containerPort": 8088,
       "windowTitle": "My Custom App",
       "windowSize": {
         "width": 1200,
@@ -120,7 +120,7 @@ Create a `dock2tauri.conf.json`:
 
 ### Environment Variables
 
-- `DOCK2TAURI_DEFAULT_PORT`: Default host port (default: 8080)
+- `DOCK2TAURI_DEFAULT_PORT`: Default host port (default: 8088)
 - `DOCK2TAURI_WINDOW_WIDTH`: Default window width (default: 1200)
 - `DOCK2TAURI_WINDOW_HEIGHT`: Default window height (default: 800)
 
@@ -142,7 +142,7 @@ make test-nodejs
 
 1. **Port already in use**
    ```bash
-   docker ps --filter "publish=8080" -q | xargs docker stop
+   docker ps --filter "publish=8088" -q | xargs docker stop
    ```
 
 2. **Docker not found**

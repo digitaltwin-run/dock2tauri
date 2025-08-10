@@ -133,7 +133,7 @@ function renderContainers() {
 }
 
 async function openContainer(portsStr) {
-    // Extract host port from ports string like "0.0.0.0:8080->80/tcp"
+    // Extract host port from ports string like "0.0.0.0:8088->80/tcp"
     const match = portsStr.match(/(\d+)->/);
     if (match) {
         const port = match[1];

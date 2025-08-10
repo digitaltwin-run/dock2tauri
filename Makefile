@@ -3,7 +3,7 @@
 # Configuration
 PROJECT_NAME = dock2tauri
 VERSION = 1.0.0
-DEFAULT_HOST_PORT = 8080
+DEFAULT_HOST_PORT = 8088
 DEFAULT_CONTAINER_PORT = 80
 
 # Colors for output
@@ -50,9 +50,9 @@ build: ## Build production version
 	@cd src-tauri && cargo tauri build
 
 # Quick launch presets
-nginx: ## Launch Nginx web server (port 8080)
+nginx: ## Launch Nginx web server (port 8088)
 	@echo "$(GREEN)🌐 Launching Nginx as desktop app...$(NC)"
-	@./scripts/dock2tauri.sh nginx:alpine 8080 80
+	@./scripts/dock2tauri.sh nginx:alpine 8088 80
 
 grafana: ## Launch Grafana dashboard (port 3001)
 	@echo "$(GREEN)📊 Launching Grafana as desktop app...$(NC)"
@@ -67,9 +67,9 @@ portainer: ## Launch Portainer Docker UI (port 9000)
 	@./scripts/dock2tauri.sh portainer/portainer-ce 9000 9000
 
 # Generic launch command
-launch: ## Launch custom container (usage: make launch IMAGE=image:tag HOST_PORT=8080 CONTAINER_PORT=80)
+launch: ## Launch custom container (usage: make launch IMAGE=image:tag HOST_PORT=8088 CONTAINER_PORT=80)
 	@if [ -z "$(IMAGE)" ]; then \
-		echo "$(RED)❌ IMAGE parameter is required. Usage: make launch IMAGE=nginx:alpine HOST_PORT=8080 CONTAINER_PORT=80$(NC)"; \
+		echo "$(RED)❌ IMAGE parameter is required. Usage: make launch IMAGE=nginx:alpine HOST_PORT=8088 CONTAINER_PORT=80$(NC)"; \
 		exit 1; \
 	fi
 	@echo "$(GREEN)🚀 Launching $(IMAGE) as desktop app...$(NC)"
@@ -158,6 +158,6 @@ examples: ## Show usage examples
 	@echo "  make launch IMAGE=mysql:8 HOST_PORT=3306 CONTAINER_PORT=3306"
 	@echo ""
 	@echo "$(YELLOW)Script Launchers:$(NC)"
-	@echo "  ./scripts/dock2tauri.sh nginx:alpine 8080 80"
-	@echo "  python3 scripts/dock2tauri.py --image nginx:alpine --host-port 8080"
+	@echo "  ./scripts/dock2tauri.sh nginx:alpine 8088 80"
+	@echo "  python3 scripts/dock2tauri.py --image nginx:alpine --host-port 8088"
 	@echo "  node scripts/dock2tauri.js grafana/grafana 3001 3000"
