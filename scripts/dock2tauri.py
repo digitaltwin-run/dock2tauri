@@ -159,42 +159,40 @@ class Dock2Tauri:
         return False
 
     def update_tauri_config(self):
-        """Update Tauri configuration for the container."""
+        """Update Tauri configuration with Docker URL."""
         Logger.info("Updating Tauri configuration...")
-        
-        if not self.config_file.exists():
-            Logger.warning("Tauri config not found, skipping update")
-            return False
         
         # Create backup
         backup_file = self.config_file.with_suffix('.json.backup')
         if self.config_file.exists():
-            self.config_file.rename(backup_file)
+            import shutil
+            shutil.copy2(self.config_file, backup_file)
         
-        # Create new configuration
         config = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
             "build": {
                 "beforeBuildCommand": "",
                 "beforeDevCommand": "",
-                "frontendDist": "../app",
-                "devUrl": f"http://localhost:{self.host_port}"
+                "devPath": f"http://localhost:{self.host_port}",
+                "distDir": "../app"
             },
-            "bundle": {
-                "active": True,
-                "targets": "all",
-                "createUpdaterArtifacts": False,
-                "publisher": "Dock2Tauri",
-                "copyright": "Copyright (c) 2025",
-                "category": "DeveloperTool",
-                "shortDescription": "Docker App in Tauri",
-                "longDescription": f"Running {self.image} as desktop application"
+            "package": {
+                "productName": f"Dock2Tauri - {self.image.split(':')[0]}",
+                "version": "1.0.0"
             },
-            "productName": f"Dock2Tauri - {self.image.split(':')[0]}",
-            "version": "1.0.0",
-            "identifier": f"com.dock2tauri.{''.join(c for c in self.image if c.isalnum())}",
-            "plugins": {},
-            "app": {
+            "tauri": {
+                "allowlist": {
+                    "all": True
+                },
+                "bundle": {
+                    "active": True,
+                    "icon": [],
+                    "identifier": f"com.dock2tauri.{''.join(c for c in self.image if c.isalnum())}",
+                    "targets": ["appimage", "deb", "rpm"]
+                },
+                "security": {
+                    "csp": None
+                },
                 "windows": [{
                     "title": f"Dock2Tauri - {self.image}",
                     "width": 1200,
@@ -203,10 +201,7 @@ class Dock2Tauri:
                     "minHeight": 400,
                     "resizable": True,
                     "fullscreen": False
-                }],
-                "security": {
-                    "csp": None
-                }
+                }]
             }
         }
         

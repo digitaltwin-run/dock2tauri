@@ -203,7 +203,7 @@ class Dock2Tauri {
     /**
      * Update Tauri configuration
      */
-    async updateTauriConfig() {
+    updateTauriConfig() {
         logger.info('Updating Tauri configuration...');
 
         if (!fs.existsSync(this.configFile)) {
@@ -212,35 +212,36 @@ class Dock2Tauri {
         }
 
         // Create backup
-        const backupFile = `${this.configFile}.backup`;
+        const backupFile = this.configFile + '.backup';
         if (fs.existsSync(this.configFile)) {
             fs.copyFileSync(this.configFile, backupFile);
         }
 
-        // Create new configuration
         const config = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
             "build": {
                 "beforeBuildCommand": "",
                 "beforeDevCommand": "",
-                "frontendDist": "../app",
-                "devUrl": `http://localhost:${this.hostPort}`
+                "devPath": `http://localhost:${this.hostPort}`,
+                "distDir": "../app"
             },
-            "bundle": {
-                "active": true,
-                "targets": "all",
-                "createUpdaterArtifacts": false,
-                "publisher": "Dock2Tauri",
-                "copyright": "Copyright (c) 2025",
-                "category": "DeveloperTool",
-                "shortDescription": "Docker App in Tauri",
-                "longDescription": `Running ${this.image} as desktop application`
+            "package": {
+                "productName": `Dock2Tauri - ${this.image.split(':')[0]}`,
+                "version": "1.0.0"
             },
-            "productName": `Dock2Tauri - ${this.image.split(':')[0]}`,
-            "version": "1.0.0",
-            "identifier": `com.dock2tauri.${this.image.replace(/[^a-zA-Z0-9]/g, '')}`,
-            "plugins": {},
-            "app": {
+            "tauri": {
+                "allowlist": {
+                    "all": true
+                },
+                "bundle": {
+                    "active": true,
+                    "icon": [],
+                    "identifier": `com.dock2tauri.${this.image.replace(/[^a-zA-Z0-9]/g, '')}`,
+                    "targets": ["appimage", "deb", "rpm"]
+                },
+                "security": {
+                    "csp": null
+                },
                 "windows": [{
                     "title": `Dock2Tauri - ${this.image}`,
                     "width": 1200,
@@ -249,10 +250,7 @@ class Dock2Tauri {
                     "minHeight": 400,
                     "resizable": true,
                     "fullscreen": false
-                }],
-                "security": {
-                    "csp": null
-                }
+                }]
             }
         };
 
@@ -355,7 +353,7 @@ class Dock2Tauri {
         }
 
         // Restore config backup
-        const backupFile = `${this.configFile}.backup`;
+        const backupFile = this.configFile + '.backup';
         if (fs.existsSync(backupFile)) {
             fs.renameSync(backupFile, this.configFile);
             logger.success('Tauri configuration restored');

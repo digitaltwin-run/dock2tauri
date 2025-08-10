@@ -154,16 +154,25 @@ update_tauri_config() {
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "distDir": "../app",
-    "devPath": "http://localhost:$HOST_PORT"
+    "devPath": "http://localhost:$HOST_PORT",
+    "distDir": "../app"
   },
   "package": {
     "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1)",
     "version": "1.0.0"
   },
   "tauri": {
+    "allowlist": {
+      "all": true
+    },
     "bundle": {
-      "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')"
+      "active": true,
+      "icon": [],
+      "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
+      "targets": ["appimage", "deb", "rpm"]
+    },
+    "security": {
+      "csp": null
     },
     "windows": [
       {
@@ -175,12 +184,8 @@ update_tauri_config() {
         "resizable": true,
         "fullscreen": false
       }
-    ],
-    "security": {
-      "csp": null
-    }
-  },
-  "plugins": {}
+    ]
+  }
 }
 EOF
         log_success "Tauri configuration updated"
