@@ -137,10 +137,7 @@ update_tauri_config() {
   },
   "tauri": {
     "bundle": {
-      "active": true,
-      "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
-      "publisher": "Dock2Tauri",
-      "createUpdaterArtifacts": false
+      "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')"
     },
     "windows": [
       {
