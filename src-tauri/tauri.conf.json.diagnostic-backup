@@ -7,17 +7,16 @@
     "devPath": "http://localhost:8088"
   },
   "package": {
-    "productName": "Dock2Tauri - nginx",
+    "productName": "Dock2Tauri - dock2tauri-local-dockerfile-1754828951",
     "version": "1.0.0"
   },
   "tauri": {
     "bundle": {
-      "identifier": "com.dock2tauri.nginxalpine",
-      "icon": []
+      "identifier": "com.dock2tauri.dock2taurilocaldockerfile1754828951"
     },
     "windows": [
       {
-        "title": "Dock2Tauri - nginx:alpine",
+        "title": "Dock2Tauri - dock2tauri-local-dockerfile-1754828951",
         "width": 1200,
         "height": 800,
         "minWidth": 600,

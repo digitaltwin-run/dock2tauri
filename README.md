@@ -106,6 +106,31 @@ To build distributable bundles (dmg/msi/AppImage etc.) instead of launching the 
 
 The script calls `cargo tauri build [--target <triple>]` in `src-tauri/` after updating the Tauri config.
 
+**Note**  
+Bundles (AppImage / dmg / msi) are created only if Tauri’s bundler can find a built frontend in the `distDir` (configured as `app/` here) **and** all system packaging dependencies are installed (e.g. `appimagetool` on Linux, `osx dmg tools` on macOS, WiX on Windows).  
+If these tools are missing, `cargo tauri build` still succeeds but produces only the native executable:  
+`src-tauri/target/release/dock2-tauri-<image>-<timestamp>`  
+You can run this binary directly for a portable app without an installer.
+
+After a successful build, distributable bundles are created under:
+
+```text
+src-tauri/target/release/bundle/
+└── <platform>/
+    ├── Dock2Tauri_<version>_<arch>.AppImage   # Linux example
+    ├── Dock2Tauri Setup <version>.msi         # Windows example
+    └── Dock2Tauri_<version>.dmg              # macOS example
+```
+
+Simply double-click the file for your OS or install it with your package manager. On Linux you can test the AppImage directly:
+
+```bash
+chmod +x src-tauri/target/release/bundle/appimage/Dock2Tauri_*.AppImage
+./src-tauri/target/release/bundle/appimage/Dock2Tauri_*.AppImage
+```
+
+If you specified `--target=<triple>`, the artifacts will appear under `bundle/<triple>/`.
+
 #### Method 3: Python Script
 ```bash
 python scripts/dock2tauri.py --image nginx:alpine --host-port 8088 --container-port 80
@@ -120,6 +145,24 @@ node scripts/dock2tauri.js nginx:alpine 8088 80
 ```bash
 make dev
 ```
+
+### 🚦 Run Modes Summary
+
+| Mode | Command | Output |
+|------|---------|--------|
+| **Dev (hot-reload)** | `./scripts/dock2tauri.sh ./Dockerfile 8088 80` | Runs `cargo tauri dev` with live reload. |
+| **Installers / Bundles** | `./scripts/dock2tauri.sh ./Dockerfile 8088 80 --build` | Creates AppImage/dmg/msi in `src-tauri/target/release/bundle/` *(requires packaging tools and built frontend in `app/`)* |
+| **Portable Binary** | `./scripts/dock2tauri.sh ./Dockerfile 8088 80 --build` + run `src-tauri/target/release/dock2-tauri-*` | A single native executable (no installer). |
+
+The portable binary is useful when packaging tools aren’t installed or you only need a self-contained executable. Launch it in the background:
+
+```bash
+./src-tauri/target/release/dock2-tauri-dock2tauri-local-dockerfile-* &
+```
+
+> 💡 The console may print a WebKitGTK deprecation warning:
+> `webkit_settings_set_enable_offline_web_application_cache is deprecated and does nothing.`  
+> This is harmless and can be ignored.
 
 ## 📋 Available Presets
 

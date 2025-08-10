@@ -12,7 +12,16 @@
   },
   "tauri": {
     "bundle": {
-      "identifier": "com.dock2tauri.dock2taurilocaldockerfile1754828951"
+      "identifier": "com.dock2tauri.dock2taurilocaldockerfile1754828951",
+      "targets": [
+        "appimage",
+        "deb",
+        "rpm"
+      ],
+      "icon": [],
+      "category": "Utility",
+      "shortDescription": "Docker to Desktop Bridge",
+      "longDescription": "Transform any Docker container into a native desktop application using Tauri"
     },
     "windows": [
       {
