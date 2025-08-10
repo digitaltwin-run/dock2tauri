@@ -170,7 +170,25 @@ launch_tauri() {
     log_info "Launching Tauri application..."
     
     cd "$BASE_DIR/src-tauri" || exit 1
-    
+
+    # Ensure Tauri CLI v1.x for config compatibility
+    TAURI_VER=""
+    if command -v tauri >/dev/null 2>&1; then
+        TAURI_VER=$(tauri --version 2>/dev/null | awk '{print $2}')
+    elif command -v cargo >/dev/null 2>&1; then
+        TAURI_VER=$(cargo tauri --version 2>/dev/null | awk '{print $2}')
+    fi
+    if [ -n "$TAURI_VER" ]; then
+        TAURI_MAJOR=${TAURI_VER%%.*}
+        if [ "$TAURI_MAJOR" != "1" ]; then
+            log_error "Incompatible Tauri CLI version detected: $TAURI_VER."
+            log_error "This project requires Tauri CLI v1.x to match Cargo.toml (tauri=\"1.0\")."
+            log_info  "Run: ./scripts/install.sh   to install the compatible tauri-cli v1.x"
+            log_info  "Or manually: cargo install --force --locked --version '^1' tauri-cli"
+            exit 1
+        fi
+    fi
+
     # Check if we have Tauri CLI
     if command -v tauri >/dev/null 2>&1; then
         tauri dev
