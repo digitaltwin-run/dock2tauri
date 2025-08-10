@@ -12,14 +12,8 @@
   },
   "tauri": {
     "bundle": {
-      "active": true,
       "identifier": "com.dock2tauri.nginxalpine",
-      "publisher": "Dock2Tauri",
-      "createUpdaterArtifacts": false,
-      "copyright": "Copyright (c) 2025",
-      "category": "DeveloperTool",
-      "shortDescription": "Docker App in Tauri",
-      "longDescription": "Running nginx:alpine as desktop application"
+      "icon": []
     },
     "windows": [
       {

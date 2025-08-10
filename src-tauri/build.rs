@@ -6,14 +6,11 @@ fn main() {
 
 fn ensure_placeholder_icon() {
   use std::fs;
-  use std::io::Write;
   use std::path::Path;
+  use image::{open as open_image, Rgba, RgbaImage};
 
   let icons_dir = Path::new("icons");
   let icon_path = icons_dir.join("icon.png");
-  if icon_path.exists() {
-    return;
-  }
   // Create directory if needed
   if !icons_dir.exists() {
     if let Err(e) = fs::create_dir_all(&icons_dir) {
@@ -21,22 +18,31 @@ fn ensure_placeholder_icon() {
       return;
     }
   }
-  // Minimal 1x1 PNG (opaque black pixel)
-  // This is a valid PNG file content.
-  const ICON_BYTES: &[u8] = &[
-    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-    0xDE, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
-    0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D, 0x8F, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
-    0x44, 0xAE, 0x42, 0x60, 0x82,
-  ];
-  match fs::File::create(&icon_path) {
-    Ok(mut f) => {
-      if let Err(e) = f.write_all(ICON_BYTES) {
-        eprintln!("warning: failed to write placeholder icon: {e}");
+  if icon_path.exists() {
+    // Try to load and re-save as RGBA8 to satisfy tauri-build
+    match open_image(&icon_path) {
+      Ok(img) => {
+        let rgba: RgbaImage = img.to_rgba8();
+        if let Err(e) = rgba.save(&icon_path) {
+          eprintln!("warning: failed to rewrite icon as RGBA8: {e}");
+        }
+      }
+      Err(e) => {
+        eprintln!("warning: failed to read existing icon, writing placeholder: {e}");
+        write_placeholder_rgba_png(&icon_path);
       }
     }
-    Err(e) => eprintln!("warning: failed to create placeholder icon: {e}"),
+  } else {
+    write_placeholder_rgba_png(&icon_path);
+  }
+}
+
+fn write_placeholder_rgba_png<P: AsRef<std::path::Path>>(path: P) {
+  use image::{Rgba, RgbaImage};
+  let mut img = RgbaImage::new(1, 1);
+  img.put_pixel(0, 0, Rgba([0, 0, 0, 0]));
+  if let Err(e) = img.save(path) {
+    eprintln!("warning: failed to write placeholder RGBA icon: {e}");
   }
 }
 

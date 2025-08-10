@@ -12,6 +12,7 @@ edition = "2021"
 
 [build-dependencies]
 tauri-build = { version = "1.0", features = [] }
+image = "0.24"
 
 [dependencies]
 serde_json = "1.0"
