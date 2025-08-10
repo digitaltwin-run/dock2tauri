@@ -81,7 +81,16 @@ make launch IMAGE=my-app:latest HOST_PORT=8088 CONTAINER_PORT=80
 #### Method 2: Bash Script
 ```bash
 ./scripts/dock2tauri.sh nginx:alpine 8088 80
+
+# Build a local image from a Dockerfile in this directory and launch on port 8088
+./scripts/dock2tauri.sh ./Dockerfile 8088 80
 ```
+
+If the first argument passed to the script is a path to a `Dockerfile`, the launcher will:
+1. `docker build -f <Dockerfile> -t dock2tauri-local-<timestamp> <context>`
+2. Use the freshly built image instead of pulling from a registry.
+
+This is handy when you have a static site or custom backend you want to embed. Place your web assets in the `app/` folder (copied into `/usr/share/nginx/html` by the default `Dockerfile`).
 
 #### Method 3: Python Script
 ```bash

@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Dock2Tauri Bash Launcher
-# Usage: ./dock2tauri.sh <docker-image> <host-port> <container-port>
+# Usage: ./dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>]
+#   --build (-b)        Build Tauri release bundles instead of running `tauri dev`
+#   --target=<triple>   Pass target triple to `cargo tauri build`, e.g. --target=x86_64-pc-windows-gnu
 
 set -e
 
@@ -15,25 +17,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuration
-INPUT_IMAGE_OR_DOCKERFILE="${1:-nginx:alpine}"
-# If the first argument is a file that exists (Dockerfile) build a local image
-if [ -f "$INPUT_IMAGE_OR_DOCKERFILE" ]; then
-    DOCKERFILE_PATH="$INPUT_IMAGE_OR_DOCKERFILE"
-    DOCKER_BUILD_CTX="$(dirname "$DOCKERFILE_PATH")"
-    # Tag: dock2tauri-local-<basename>-<timestamp>
-    TAG="dock2tauri-local-$(basename "$DOCKERFILE_PATH" | tr ':' '-' | tr '/' '-')-$(date +%s)"
-    log_info "Building Docker image from $DOCKERFILE_PATH (context: $DOCKER_BUILD_CTX) as $TAG ..."
-    docker build -f "$DOCKERFILE_PATH" -t "$TAG" "$DOCKER_BUILD_CTX"
-    DOCKER_IMAGE="$TAG"
-else
-    DOCKER_IMAGE="$INPUT_IMAGE_OR_DOCKERFILE"
-fi
-HOST_PORT="${2:-8088}"
-CONTAINER_PORT="${3:-80}"
-CONTAINER_NAME="dock2tauri-$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]/-/g')-$HOST_PORT"
-
-# Functions
+# Logging helpers (defined early so they are available before first call)
 log_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
@@ -50,6 +34,36 @@ log_warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
+# Configuration
+INPUT_IMAGE_OR_DOCKERFILE="${1:-nginx:alpine}"
+# If the first argument is a file that exists (Dockerfile) build a local image
+if [ -f "$INPUT_IMAGE_OR_DOCKERFILE" ]; then
+    DOCKERFILE_PATH="$INPUT_IMAGE_OR_DOCKERFILE"
+    DOCKER_BUILD_CTX="$(dirname "$DOCKERFILE_PATH")"
+    # Docker tags must be lowercase and may include [a-z0-9_.-]
+    TAG_BASE="$(basename "$DOCKERFILE_PATH")"
+    TAG_BASE="$(echo "$TAG_BASE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_.-]/-/g')"
+    TAG="dock2tauri-local-${TAG_BASE}-$(date +%s)"
+    log_info "Building Docker image from $DOCKERFILE_PATH (context: $DOCKER_BUILD_CTX) as $TAG ..."
+    docker build -f "$DOCKERFILE_PATH" -t "$TAG" "$DOCKER_BUILD_CTX"
+    DOCKER_IMAGE="$TAG"
+else
+    DOCKER_IMAGE="$INPUT_IMAGE_OR_DOCKERFILE"
+fi
+HOST_PORT="${2:-8088}"
+CONTAINER_PORT="${3:-80}"
+BUILD_RELEASE=false
+BUILD_TARGET=""
+for arg in "$@"; do
+  if [ "$arg" = "--build" ] || [ "$arg" = "-b" ]; then
+    BUILD_RELEASE=true
+  elif [[ "$arg" == --target=* ]]; then
+    BUILD_TARGET="${arg#*=}"
+  fi
+done
+CONTAINER_NAME="dock2tauri-$(echo "$DOCKER_IMAGE" | sed 's/[^a-zA-Z0-9]/-/g')-$HOST_PORT"
+
+# Functions
 check_dependencies() {
     log_info "Checking dependencies..."
     
@@ -176,47 +190,16 @@ EOF
 }
 
 launch_tauri() {
-    log_info "Launching Tauri application..."
-    
-    cd "$BASE_DIR/src-tauri" || exit 1
-
-    # Ensure Tauri CLI v1.x for config compatibility
-    CARGO_TAURI_VER=""; CARGO_TAURI_MAJOR=""
-    STANDALONE_TAURI_VER=""; STANDALONE_TAURI_MAJOR=""
-    if command -v cargo >/dev/null 2>&1; then
-        CARGO_TAURI_VER=$(cargo tauri --version 2>/dev/null | awk '{print $2}' || true)
-        [ -n "$CARGO_TAURI_VER" ] && CARGO_TAURI_MAJOR=${CARGO_TAURI_VER%%.*}
-    fi
-    if command -v tauri >/dev/null 2>&1; then
-        STANDALONE_TAURI_VER=$(tauri --version 2>/dev/null | awk '{print $2}' || true)
-        [ -n "$STANDALONE_TAURI_VER" ] && STANDALONE_TAURI_MAJOR=${STANDALONE_TAURI_VER%%.*}
-    fi
-
-    RUNNER=""
-    if [ "$CARGO_TAURI_MAJOR" = "1" ]; then
-        RUNNER="cargo"
-    elif [ "$STANDALONE_TAURI_MAJOR" = "1" ]; then
-        RUNNER="standalone"
-    fi
-
-    if [ -z "$RUNNER" ]; then
-        if [ -n "$CARGO_TAURI_VER" ] || [ -n "$STANDALONE_TAURI_VER" ]; then
-            log_error "Incompatible Tauri CLI detected (cargo: ${CARGO_TAURI_VER:-none}, tauri: ${STANDALONE_TAURI_VER:-none})."
+    if $BUILD_RELEASE; then
+        log_info "Building Tauri release bundles (cargo tauri build)..."
+        if [ -n "$BUILD_TARGET" ]; then
+            (cd "$BASE_DIR/src-tauri" && cargo tauri build --target "$BUILD_TARGET")
         else
-            log_error "No Tauri CLI found."
+            (cd "$BASE_DIR/src-tauri" && cargo tauri build)
         fi
-        log_error "This project requires Tauri CLI v1.x to match Cargo.toml (tauri=\"1.0\")."
-        log_info  "Run: ./scripts/install.sh   to install the compatible tauri-cli v1.x"
-        log_info  "Or manually: cargo install --force --locked --version '^1' tauri-cli"
-        log_info  "If you also have npm's @tauri-apps/cli v2 globally, it's fine — this launcher will prefer cargo tauri v1."
-        exit 1
-    fi
-
-    # Prefer cargo tauri dev when v1 is available
-    if [ "$RUNNER" = "cargo" ]; then
-        cargo tauri dev
     else
-        tauri dev
+        log_info "Launching Tauri application (dev)..."
+        (cd "$BASE_DIR/src-tauri" && cargo tauri dev)
     fi
 }
 
