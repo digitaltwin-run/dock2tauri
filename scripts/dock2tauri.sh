@@ -121,44 +121,43 @@ update_tauri_config() {
     if [ -f "$CONFIG_FILE" ]; then
         # Create backup
         cp "$CONFIG_FILE" "$CONFIG_FILE.backup"
-        # Update configuration
+        # Update configuration (Tauri v1 schema)
         cat > "$CONFIG_FILE" << EOF
 {
-  "\$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "frontendDist": "../app",
-    "devUrl": "http://localhost:$HOST_PORT"
+    "distDir": "../app",
+    "devPath": "http://localhost:$HOST_PORT"
   },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "createUpdaterArtifacts": false,
-    "publisher": "Dock2Tauri",
-    "copyright": "Copyright (c) 2025",
-    "category": "DeveloperTool",
-    "shortDescription": "Docker App in Tauri",
-    "longDescription": "Running $DOCKER_IMAGE as desktop application"
+  "package": {
+    "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1)",
+    "version": "1.0.0"
   },
-  "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1)",
-  "version": "1.0.0",
-  "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
-  "plugins": {},
-  "app": {
-    "windows": [{
-      "title": "Dock2Tauri - $DOCKER_IMAGE",
-      "width": 1200,
-      "height": 800,
-      "minWidth": 600,
-      "minHeight": 400,
-      "resizable": true,
-      "fullscreen": false
-    }],
+  "tauri": {
+    "bundle": {
+      "active": true,
+      "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
+      "publisher": "Dock2Tauri",
+      "createUpdaterArtifacts": false
+    },
+    "windows": [
+      {
+        "title": "Dock2Tauri - $DOCKER_IMAGE",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 600,
+        "minHeight": 400,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
     "security": {
       "csp": null
     }
-  }
+  },
+  "plugins": {}
 }
 EOF
         log_success "Tauri configuration updated"
