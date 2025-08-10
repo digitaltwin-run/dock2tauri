@@ -124,7 +124,7 @@ update_tauri_config() {
         # Update configuration (Tauri v1 schema)
         cat > "$CONFIG_FILE" << EOF
 {
-  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "\$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
