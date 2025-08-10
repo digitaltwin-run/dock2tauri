@@ -16,7 +16,19 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-DOCKER_IMAGE="${1:-nginx:alpine}"
+INPUT_IMAGE_OR_DOCKERFILE="${1:-nginx:alpine}"
+# If the first argument is a file that exists (Dockerfile) build a local image
+if [ -f "$INPUT_IMAGE_OR_DOCKERFILE" ]; then
+    DOCKERFILE_PATH="$INPUT_IMAGE_OR_DOCKERFILE"
+    DOCKER_BUILD_CTX="$(dirname "$DOCKERFILE_PATH")"
+    # Tag: dock2tauri-local-<basename>-<timestamp>
+    TAG="dock2tauri-local-$(basename "$DOCKERFILE_PATH" | tr ':' '-' | tr '/' '-')-$(date +%s)"
+    log_info "Building Docker image from $DOCKERFILE_PATH (context: $DOCKER_BUILD_CTX) as $TAG ..."
+    docker build -f "$DOCKERFILE_PATH" -t "$TAG" "$DOCKER_BUILD_CTX"
+    DOCKER_IMAGE="$TAG"
+else
+    DOCKER_IMAGE="$INPUT_IMAGE_OR_DOCKERFILE"
+fi
 HOST_PORT="${2:-8088}"
 CONTAINER_PORT="${3:-80}"
 CONTAINER_NAME="dock2tauri-$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]/-/g')-$HOST_PORT"

@@ -7,7 +7,7 @@ fn main() {
 fn ensure_placeholder_icon() {
   use std::fs;
   use std::path::Path;
-  use image::{open as open_image, Rgba, RgbaImage};
+  use image::{open as open_image, RgbaImage};
 
   let icons_dir = Path::new("icons");
   let icon_path = icons_dir.join("icon.png");

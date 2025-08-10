@@ -3,7 +3,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use tauri::Manager;
 
 #[derive(Serialize, Deserialize)]
 struct ContainerInfo {
