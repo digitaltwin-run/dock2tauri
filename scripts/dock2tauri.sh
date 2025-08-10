@@ -5,6 +5,9 @@
 
 set -e
 
+# Base directory of the project
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -114,12 +117,10 @@ wait_for_service() {
 
 update_tauri_config() {
     log_info "Updating Tauri configuration..."
-    
-    CONFIG_FILE="../src-tauri/tauri.conf.json"
+    CONFIG_FILE="$BASE_DIR/src-tauri/tauri.conf.json"
     if [ -f "$CONFIG_FILE" ]; then
         # Create backup
         cp "$CONFIG_FILE" "$CONFIG_FILE.backup"
-        
         # Update configuration
         cat > "$CONFIG_FILE" << EOF
 {
@@ -169,7 +170,7 @@ EOF
 launch_tauri() {
     log_info "Launching Tauri application..."
     
-    cd "$(dirname "$0")/../src-tauri" || exit 1
+    cd "$BASE_DIR/src-tauri" || exit 1
     
     # Check if we have Tauri CLI
     if command -v tauri >/dev/null 2>&1; then
@@ -193,7 +194,7 @@ cleanup() {
     fi
     
     # Restore config backup if exists
-    CONFIG_FILE="../src-tauri/tauri.conf.json"
+    CONFIG_FILE="$BASE_DIR/src-tauri/tauri.conf.json"
     if [ -f "$CONFIG_FILE.backup" ]; then
         mv "$CONFIG_FILE.backup" "$CONFIG_FILE"
         log_success "Tauri configuration restored"

@@ -183,6 +183,59 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - [Docker](https://docker.com/) - Containerization platform
 - Community contributors and testers
 
+## Examples & Tests
+
+### Bash Launcher
+```bash
+# Launch nginx container on host port 8080
+./scripts/dock2tauri.sh nginx:alpine 8080 80
+```
+Expected output snippet:
+```
+🐳🦀 Dock2Tauri - Docker to Desktop Bridge
+ℹ️  Checking dependencies... ✅ Dependencies check passed
+ℹ️  Launching Docker container... ✅ Container launched: <container-id>
+✅ Service is ready!
+ℹ️  Updating Tauri configuration... ⚠️ Tauri config not found, skipping update
+ℹ️  Launching Tauri application...
+```
+
+### Python Launcher
+```bash
+# Launch Grafana container on host port 3001
+python3 scripts/dock2tauri.py --image grafana/grafana --host-port 3001 --container-port 3000
+```
+Expected output snippet:
+```
+🐳🦀 Dock2Tauri - Docker to Desktop Bridge
+✅ Dependencies check passed
+✅ Container launched: <container-id>
+✅ Service is ready!
+```
+
+### Node.js Launcher
+```bash
+# Launch Jupyter notebook container on host port 8888
+node scripts/dock2tauri.js jupyter/scipy-notebook 8888 8888
+```
+Expected output snippet:
+```
+🐳🦀 Dock2Tauri - Docker to Desktop Bridge
+✅ Container launched: <container-id>
+✅ Service is ready! ✅ Tauri configuration updated
+```
+
+### Automated Tests
+```bash
+# Run all launcher tests
+make test
+# Or individual tests:
+make test-bash      # Bash script
+make test-python    # Python script
+make test-nodejs    # Node.js script
+```
+All tests should pass without errors, verifying that each launcher yields a running Docker container and a Tauri app window.
+
 ---
 
 **Made with ❤️ for the Docker and Desktop App communities**
