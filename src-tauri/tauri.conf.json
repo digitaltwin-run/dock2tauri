@@ -1,0 +1,46 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "build": {
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "",
+    "frontendDist": "../app",
+    "devUrl": "http://localhost:8081"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": false,
+    "publisher": "Your Name",
+    "copyright": "Copyright (c) 2025",
+    "category": "DeveloperTool",
+    "shortDescription": "Docker App in Tauri",
+    "longDescription": "Running nginx:alpine as desktop application"
+  },
+  "productName": "Docker App - nginx",
+  "version": "1.0.0",
+  "identifier": "com.docker.nginxalpine",
+  "plugins": {},
+  "app": {
+    "windows": [
+      {
+        "title": "Docker App - nginx:alpine",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 600,
+        "minHeight": 400,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}

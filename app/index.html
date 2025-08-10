@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TauriDock - Docker to Desktop</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🐳🦀 TauriDock Control Panel</h1>
+        <p>Launch any Docker container as a native desktop application</p>
+        
+        <!-- Quick Launch Presets -->
+        <div class="section">
+            <h2>🚀 Quick Launch</h2>
+            <div class="preset-grid">
+                <button class="preset-btn" data-image="nginx:alpine" data-host="8080" data-container="80">
+                    <div class="preset-icon">🌐</div>
+                    <div class="preset-name">Nginx</div>
+                    <div class="preset-desc">Web Server</div>
+                </button>
+                
+                <button class="preset-btn" data-image="grafana/grafana" data-host="3001" data-container="3000">
+                    <div class="preset-icon">📊</div>
+                    <div class="preset-name">Grafana</div>
+                    <div class="preset-desc">Analytics</div>
+                </button>
+                
+                <button class="preset-btn" data-image="jupyter/scipy-notebook" data-host="8888" data-container="8888">
+                    <div class="preset-icon">📓</div>
+                    <div class="preset-name">Jupyter</div>
+                    <div class="preset-desc">Notebooks</div>
+                </button>
+                
+                <button class="preset-btn" data-image="portainer/portainer-ce" data-host="9000" data-container="9000">
+                    <div class="preset-icon">🐳</div>
+                    <div class="preset-name">Portainer</div>
+                    <div class="preset-desc">Docker UI</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Launch -->
+        <div class="section">
+            <h2>⚙️ Custom Launch</h2>
+            <div class="form-group">
+                <label for="docker-image">Docker Image:</label>
+                <input type="text" id="docker-image" placeholder="nginx:alpine" />
+            </div>
+            <div class="form-group">
+                <label for="host-port">Host Port:</label>
+                <input type="number" id="host-port" placeholder="8080" min="1" max="65535" />
+            </div>
+            <div class="form-group">
+                <label for="container-port">Container Port:</label>
+                <input type="number" id="container-port" placeholder="80" min="1" max="65535" />
+            </div>
+            <button id="launch-custom" class="launch-btn">🚀 Launch Custom App</button>
+        </div>
+
+        <!-- Active Containers -->
+        <div class="section">
+            <h2>📦 Active Containers</h2>
+            <div id="containers-list" class="containers-grid">
+                <div class="empty-state">No active containers</div>
+            </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="section">
+            <h2>💻 System Info</h2>
+            <div class="buttons">
+                <button id="docker-info-btn">🐳 Docker Status</button>
+                <button id="system-info-btn">💻 System Info</button>
+                <button id="refresh-btn">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <div id="output"></div>
+    </div>
+    <script src="index.js"></script>
+</body>
+</html>
