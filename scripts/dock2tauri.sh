@@ -172,33 +172,42 @@ launch_tauri() {
     cd "$BASE_DIR/src-tauri" || exit 1
 
     # Ensure Tauri CLI v1.x for config compatibility
-    TAURI_VER=""
-    if command -v tauri >/dev/null 2>&1; then
-        TAURI_VER=$(tauri --version 2>/dev/null | awk '{print $2}')
-    elif command -v cargo >/dev/null 2>&1; then
-        TAURI_VER=$(cargo tauri --version 2>/dev/null | awk '{print $2}')
+    CARGO_TAURI_VER=""; CARGO_TAURI_MAJOR=""
+    STANDALONE_TAURI_VER=""; STANDALONE_TAURI_MAJOR=""
+    if command -v cargo >/dev/null 2>&1; then
+        CARGO_TAURI_VER=$(cargo tauri --version 2>/dev/null | awk '{print $2}' || true)
+        [ -n "$CARGO_TAURI_VER" ] && CARGO_TAURI_MAJOR=${CARGO_TAURI_VER%%.*}
     fi
-    if [ -n "$TAURI_VER" ]; then
-        TAURI_MAJOR=${TAURI_VER%%.*}
-        if [ "$TAURI_MAJOR" != "1" ]; then
-            log_error "Incompatible Tauri CLI version detected: $TAURI_VER."
-            log_error "This project requires Tauri CLI v1.x to match Cargo.toml (tauri=\"1.0\")."
-            log_info  "Run: ./scripts/install.sh   to install the compatible tauri-cli v1.x"
-            log_info  "Or manually: cargo install --force --locked --version '^1' tauri-cli"
-            exit 1
-        fi
+    if command -v tauri >/dev/null 2>&1; then
+        STANDALONE_TAURI_VER=$(tauri --version 2>/dev/null | awk '{print $2}' || true)
+        [ -n "$STANDALONE_TAURI_VER" ] && STANDALONE_TAURI_MAJOR=${STANDALONE_TAURI_VER%%.*}
     fi
 
-    # Check if we have Tauri CLI
-    if command -v tauri >/dev/null 2>&1; then
-        tauri dev
-    elif command -v cargo >/dev/null 2>&1; then
+    RUNNER=""
+    if [ "$CARGO_TAURI_MAJOR" = "1" ]; then
+        RUNNER="cargo"
+    elif [ "$STANDALONE_TAURI_MAJOR" = "1" ]; then
+        RUNNER="standalone"
+    fi
+
+    if [ -z "$RUNNER" ]; then
+        if [ -n "$CARGO_TAURI_VER" ] || [ -n "$STANDALONE_TAURI_VER" ]; then
+            log_error "Incompatible Tauri CLI detected (cargo: ${CARGO_TAURI_VER:-none}, tauri: ${STANDALONE_TAURI_VER:-none})."
+        else
+            log_error "No Tauri CLI found."
+        fi
+        log_error "This project requires Tauri CLI v1.x to match Cargo.toml (tauri=\"1.0\")."
+        log_info  "Run: ./scripts/install.sh   to install the compatible tauri-cli v1.x"
+        log_info  "Or manually: cargo install --force --locked --version '^1' tauri-cli"
+        log_info  "If you also have npm's @tauri-apps/cli v2 globally, it's fine — this launcher will prefer cargo tauri v1."
+        exit 1
+    fi
+
+    # Prefer cargo tauri dev when v1 is available
+    if [ "$RUNNER" = "cargo" ]; then
         cargo tauri dev
     else
-        log_error "Neither Tauri CLI nor Cargo found. Please install Rust and Tauri CLI."
-        log_info "Container is running at: http://localhost:$HOST_PORT"
-        log_info "Container ID: $CONTAINER_ID"
-        exit 1
+        tauri dev
     fi
 }
 
