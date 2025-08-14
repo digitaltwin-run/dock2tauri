@@ -10,9 +10,6 @@
     "frontendDist": "../app"
   },
   "app": {
-    "allowlist": {
-      "all": true
-    },
     "security": {
       "csp": null
     },
@@ -38,9 +35,6 @@
     "category": "DeveloperTool",
     "shortDescription": "Docker App in Tauri",
     "longDescription": "Running test:latest as desktop application"
-  },
-  "updater": {
-    "active": false
   },
   "plugins": {}
 }
