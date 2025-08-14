@@ -242,6 +242,9 @@ class Dock2Tauri {
                 "security": {
                     "csp": null
                 },
+                "updater": {
+                    "active": false
+                },
                 "windows": [{
                     "title": `Dock2Tauri - ${this.image}`,
                     "width": 1200,
@@ -251,7 +254,8 @@ class Dock2Tauri {
                     "resizable": true,
                     "fullscreen": false
                 }]
-            }
+            },
+            "plugins": {}
         };
 
         try {

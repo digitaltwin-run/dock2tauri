@@ -174,6 +174,9 @@ update_tauri_config() {
     "security": {
       "csp": null
     },
+    "updater": {
+      "active": false
+    },
     "windows": [
       {
         "title": "Dock2Tauri - $DOCKER_IMAGE",
@@ -185,7 +188,8 @@ update_tauri_config() {
         "fullscreen": false
       }
     ]
-  }
+  },
+  "plugins": {}
 }
 EOF
         log_success "Tauri configuration updated"

@@ -193,6 +193,9 @@ class Dock2Tauri:
                 "security": {
                     "csp": None
                 },
+                "updater": {
+                    "active": False
+                },
                 "windows": [{
                     "title": f"Dock2Tauri - {self.image}",
                     "width": 1200,
@@ -202,7 +205,8 @@ class Dock2Tauri:
                     "resizable": True,
                     "fullscreen": False
                 }]
-            }
+            },
+            "plugins": {}
         }
         
         try:
