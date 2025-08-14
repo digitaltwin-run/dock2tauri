@@ -1,32 +1,20 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "Dock2Tauri - test",
+  "version": "1.0.0",
+  "identifier": "com.dock2tauri.testlatest",
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "devPath": "http://localhost:8088",
-    "distDir": "../app"
+    "devUrl": "http://localhost:8088",
+    "frontendDist": "../app"
   },
-  "tauri": {
+  "app": {
     "allowlist": {
       "all": true
     },
-    "bundle": {
-      "active": true,
-      "targets": ["appimage", "deb", "rpm"],
-      "identifier": "com.dock2tauri.testlatest",
-      "icon": [],
-      "resources": [],
-      "externalBin": [],
-      "copyright": "",
-      "category": "DeveloperTool",
-      "shortDescription": "Docker App in Tauri",
-      "longDescription": "Running test:latest as desktop application"
-    },
     "security": {
       "csp": null
-    },
-    "updater": {
-      "active": false
     },
     "windows": [
       {
@@ -39,5 +27,20 @@
         "fullscreen": false
       }
     ]
-  }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage", "deb", "rpm"],
+    "icon": [],
+    "resources": [],
+    "externalBin": [],
+    "copyright": "",
+    "category": "DeveloperTool",
+    "shortDescription": "Docker App in Tauri",
+    "longDescription": "Running test:latest as desktop application"
+  },
+  "updater": {
+    "active": false
+  },
+  "plugins": {}
 }
