@@ -170,31 +170,18 @@ class Dock2Tauri:
         
         config = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+            "productName": f"Dock2Tauri - {self.image.split(':')[0]}",
+            "version": "1.0.0",
+            "identifier": f"com.dock2tauri.{''.join(c for c in self.image if c.isalnum())}",
             "build": {
                 "beforeBuildCommand": "",
                 "beforeDevCommand": "",
-                "devPath": f"http://localhost:{self.host_port}",
-                "distDir": "../app"
+                "devUrl": f"http://localhost:{self.host_port}",
+                "frontendDist": "../app"
             },
-            "package": {
-                "productName": f"Dock2Tauri - {self.image.split(':')[0]}",
-                "version": "1.0.0"
-            },
-            "tauri": {
-                "allowlist": {
-                    "all": True
-                },
-                "bundle": {
-                    "active": True,
-                    "icon": [],
-                    "identifier": f"com.dock2tauri.{''.join(c for c in self.image if c.isalnum())}",
-                    "targets": ["appimage", "deb", "rpm"]
-                },
+            "app": {
                 "security": {
                     "csp": None
-                },
-                "updater": {
-                    "active": False
                 },
                 "windows": [{
                     "title": f"Dock2Tauri - {self.image}",
@@ -205,6 +192,17 @@ class Dock2Tauri:
                     "resizable": True,
                     "fullscreen": False
                 }]
+            },
+            "bundle": {
+                "active": True,
+                "targets": ["appimage", "deb", "rpm"],
+                "icon": [],
+                "resources": [],
+                "externalBin": [],
+                "copyright": "",
+                "category": "DeveloperTool",
+                "shortDescription": "Docker App in Tauri",
+                "longDescription": f"Running {self.image} as desktop application"
             },
             "plugins": {}
         }

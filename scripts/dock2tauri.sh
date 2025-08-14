@@ -147,35 +147,22 @@ update_tauri_config() {
     if [ -f "$CONFIG_FILE" ]; then
         # Create backup
         cp "$CONFIG_FILE" "$CONFIG_FILE.backup"
-        # Update configuration (Tauri v1 schema)
+        # Update configuration (Tauri v2 schema)
         cat > "$CONFIG_FILE" << EOF
 {
   "\$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1)",
+  "version": "1.0.0",
+  "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "devPath": "http://localhost:$HOST_PORT",
-    "distDir": "../app"
+    "devUrl": "http://localhost:$HOST_PORT",
+    "frontendDist": "../app"
   },
-  "package": {
-    "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1)",
-    "version": "1.0.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": true
-    },
-    "bundle": {
-      "active": true,
-      "icon": [],
-      "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
-      "targets": ["appimage", "deb", "rpm"]
-    },
+  "app": {
     "security": {
       "csp": null
-    },
-    "updater": {
-      "active": false
     },
     "windows": [
       {
@@ -188,6 +175,17 @@ update_tauri_config() {
         "fullscreen": false
       }
     ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage", "deb", "rpm"],
+    "icon": [],
+    "resources": [],
+    "externalBin": [],
+    "copyright": "",
+    "category": "DeveloperTool",
+    "shortDescription": "Docker App in Tauri",
+    "longDescription": "Running $DOCKER_IMAGE as desktop application"
   },
   "plugins": {}
 }
