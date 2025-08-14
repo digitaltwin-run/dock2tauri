@@ -170,7 +170,7 @@ class Dock2Tauri:
         
         config = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-            "productName": f"Dock2Tauri - {self.image.split(':')[0]}",
+            "productName": f"Dock2Tauri - {''.join(c for c in self.image.split(':')[0] if c not in '/\\:*?\"<>|')}",
             "version": "1.0.0",
             "identifier": f"com.dock2tauri.{''.join(c for c in self.image if c.isalnum())}",
             "build": {

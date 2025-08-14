@@ -219,7 +219,7 @@ class Dock2Tauri {
 
         const config = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-            "productName": `Dock2Tauri - ${this.image.split(':')[0]}`,
+            "productName": `Dock2Tauri - ${this.image.split(':')[0].replace(/[\/\\:*?"<>|]/g, '')}`,
             "version": "1.0.0",
             "identifier": `com.dock2tauri.${this.image.replace(/[^a-zA-Z0-9]/g, '')}`,
             "build": {

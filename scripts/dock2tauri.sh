@@ -151,7 +151,7 @@ update_tauri_config() {
         cat > "$CONFIG_FILE" << EOF
 {
   "\$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1)",
+  "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1 | sed 's|[/\\:*?\"<>|]||g')",
   "version": "1.0.0",
   "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
   "build": {
