@@ -6,23 +6,21 @@
     "devPath": "http://localhost:8088",
     "distDir": "../app"
   },
-  "package": {
-    "productName": "Dock2Tauri - test",
-    "version": "1.0.0"
-  },
   "tauri": {
     "allowlist": {
       "all": true
     },
     "bundle": {
       "active": true,
-      "icon": [],
+      "targets": ["appimage", "deb", "rpm"],
       "identifier": "com.dock2tauri.testlatest",
-      "targets": [
-        "appimage",
-        "deb", 
-        "rpm"
-      ]
+      "icon": [],
+      "resources": [],
+      "externalBin": [],
+      "copyright": "",
+      "category": "DeveloperTool",
+      "shortDescription": "Docker App in Tauri",
+      "longDescription": "Running test:latest as desktop application"
     },
     "security": {
       "csp": null
@@ -41,6 +39,5 @@
         "fullscreen": false
       }
     ]
-  },
-  "plugins": {}
+  }
 }
