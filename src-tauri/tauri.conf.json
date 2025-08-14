@@ -1,12 +1,12 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "Dock2Tauri - grafanagrafana",
+  "productName": "Dock2Tauri - dock2tauri-local-dockerfile-1755200273",
   "version": "1.0.0",
-  "identifier": "com.dock2tauri.grafanagrafana",
+  "identifier": "com.dock2tauri.dock2taurilocaldockerfile1755200273",
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "devUrl": "http://localhost:3001",
+    "devUrl": "http://localhost:8088",
     "frontendDist": "../app"
   },
   "app": {
@@ -15,7 +15,7 @@
     },
     "windows": [
       {
-        "title": "Dock2Tauri - grafana/grafana",
+        "title": "Dock2Tauri - dock2tauri-local-dockerfile-1755200273",
         "width": 1200,
         "height": 800,
         "minWidth": 600,
@@ -27,18 +27,14 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "appimage",
-      "deb",
-      "rpm"
-    ],
+    "targets": ["appimage", "deb", "rpm"],
     "icon": [],
     "resources": [],
     "externalBin": [],
     "copyright": "",
     "category": "DeveloperTool",
     "shortDescription": "Docker App in Tauri",
-    "longDescription": "Running grafana/grafana as desktop application"
+    "longDescription": "Running dock2tauri-local-dockerfile-1755200273 as desktop application"
   },
   "plugins": {}
 }

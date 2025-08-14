@@ -4,6 +4,7 @@ node_modules
 dist
 Cargo.lock
 *.AppImage
+.backup
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
