@@ -20,12 +20,15 @@
       "identifier": "com.dock2tauri.testlatest",
       "targets": [
         "appimage",
-        "deb",
+        "deb", 
         "rpm"
       ]
     },
     "security": {
       "csp": null
+    },
+    "updater": {
+      "active": false
     },
     "windows": [
       {
@@ -38,5 +41,6 @@
         "fullscreen": false
       }
     ]
-  }
+  },
+  "plugins": {}
 }
