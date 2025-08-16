@@ -102,25 +102,25 @@ install_rust_and_tauri() {
     source "$HOME/.cargo/env"
     ok "Rust installed"
   fi
-  # Ensure Tauri CLI v1.x for compatibility with this project
+  # Ensure Tauri CLI v2.x for compatibility with this project
   local NEED_INSTALL=0
   if require_cmd tauri; then
     local VER MAJOR
     VER=$(tauri --version 2>/dev/null | awk '{print $2}')
     MAJOR=${VER%%.*}
-    if [[ -z "$MAJOR" || "$MAJOR" != "1" ]]; then
-      warn "Tauri CLI v$VER detected; installing compatible v1.x"
+    if [[ -z "$MAJOR" || "$MAJOR" != "2" ]]; then
+      warn "Tauri CLI v$VER detected; installing compatible v2.x"
       NEED_INSTALL=1
     fi
   else
     NEED_INSTALL=1
   fi
   if [[ $NEED_INSTALL -eq 1 ]]; then
-    warn "Installing Tauri CLI v1.x via cargo..."
-    cargo install --force --locked --version '^1' tauri-cli
-    ok "Tauri CLI v1 installed"
+    warn "Installing Tauri CLI v2.x via cargo..."
+    cargo install --force --locked --version '^2' tauri-cli
+    ok "Tauri CLI v2 installed"
   else
-    ok "Tauri CLI v1 detected ($VER)"
+    ok "Tauri CLI v2 detected ($VER)"
   fi
 }
 

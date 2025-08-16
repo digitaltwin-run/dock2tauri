@@ -16,7 +16,7 @@ Dock2Tauri is a lightweight bridge that allows you to run any Docker container a
 - 📊 **Container Management**: Start, stop, and monitor containers
 - 🌐 **Auto Browser Integration**: Automatically opens container web interfaces
 - ⚡ **Hot Configuration**: Dynamic port mapping and container settings
-- 🔧 **Tauri v1 Compliant**: Proper schema validation and configuration
+- 🔧 **Tauri v2 Compatible**: Proper schema validation and configuration
 
 ## 🚀 Quick Start
 
@@ -185,7 +185,7 @@ Supported bundle formats:
 - **macOS**: .dmg, .app bundle
 
 ### Manual Packaging (Fedora Workaround)
-On Fedora systems where Tauri CLI may not generate bundles, use the manual packaging script:
+On some Fedora systems, the Tauri CLI may not generate bundles despite successful builds. Use the manual packaging script as a workaround:
 ```bash
 ./scripts/build-bundles.sh
 ```
@@ -201,12 +201,12 @@ Gdk-Message: 15:34:22.123: Unable to load webkit2gtk-web-extension: ...
 ```
 
 ### Fedora Bundle Generation
-Tauri CLI v1.6.6 on Fedora may not generate bundles despite successful builds. Use the manual packaging script as a workaround.
+On some Fedora systems, the Tauri CLI may not generate bundles despite successful builds. Use the manual packaging script as a workaround.
 
 ## 🔧 Technical Details
 
 ### Tauri Configuration
-All launchers generate valid Tauri v1 configuration with:
+All launchers generate valid Tauri v2 configuration with:
 - Proper JSON schema validation
 - Dynamic port and identifier configuration  
 - Bundle targets for AppImage, .deb, .rpm
