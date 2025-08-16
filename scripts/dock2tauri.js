@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn, exec } = require('child_process');
 const http = require('http');
 const { promisify } = require('util');
@@ -38,9 +39,11 @@ class Dock2Tauri {
         this.containerName = `dock2tauri-${this.image.replace(/[^a-zA-Z0-9]/g, '-')}-${this.hostPort}`;
         this.containerId = null;
         this.scriptDir = __dirname;
-        this.configFile = path.join(this.scriptDir, '..', 'src-tauri', 'tauri.conf.json');
         this.buildRelease = buildRelease;
         this.buildTarget = buildTarget;
+        this.healthUrl = null;
+        this.timeout = 30;
+        this.tauriConfigPath = null;
     }
 
     /**
@@ -125,6 +128,27 @@ class Dock2Tauri {
     }
 
     /**
+     * If `this.image` is a Dockerfile path, build it and set `this.image` to a local tag.
+     */
+    async prepareImageOrDockerfile() {
+        try {
+            if (this.image && fs.existsSync(this.image) && fs.statSync(this.image).isFile()) {
+                const dockerfilePath = this.image;
+                const ctx = path.dirname(dockerfilePath);
+                const base = path.basename(dockerfilePath).toLowerCase().replace(/[^a-z0-9_.-]/g, '-');
+                const tag = `dock2tauri-local-${base}-${Date.now()}`;
+                logger.info(`Building Docker image from ${dockerfilePath} (context: ${ctx}) as ${tag} ...`);
+                await this.execCommand(`docker build -f "${dockerfilePath}" -t "${tag}" "${ctx}"`);
+                this.image = tag;
+                this.containerName = `dock2tauri-${this.image.replace(/[^a-zA-Z0-9]/g, '-')}-${this.hostPort}`;
+            }
+        } catch (error) {
+            logger.error(`Failed to build Dockerfile: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
      * Launch the Docker container
      */
     async launchContainer() {
@@ -160,9 +184,11 @@ class Dock2Tauri {
     async waitForService() {
         logger.info('Waiting for service to be ready...');
 
-        for (let i = 0; i < 30; i++) {
+        const url = this.healthUrl || `http://localhost:${this.hostPort}`;
+        const timeout = Number(this.timeout) || 30;
+        for (let i = 0; i < timeout; i++) {
             try {
-                await this.checkUrl(`http://localhost:${this.hostPort}`);
+                await this.checkUrl(url);
                 logger.success('Service is ready!');
                 return true;
             } catch (e) {
@@ -201,21 +227,10 @@ class Dock2Tauri {
     }
 
     /**
-     * Update Tauri configuration
+     * Generate ephemeral Tauri configuration and store its path in this.tauriConfigPath
      */
-    updateTauriConfig() {
-        logger.info('Updating Tauri configuration...');
-
-        if (!fs.existsSync(this.configFile)) {
-            logger.warning('Tauri config not found, skipping update');
-            return false;
-        }
-
-        // Create backup
-        const backupFile = this.configFile + '.backup';
-        if (fs.existsSync(this.configFile)) {
-            fs.copyFileSync(this.configFile, backupFile);
-        }
+    generateTauriConfig() {
+        logger.info('Preparing Tauri configuration (ephemeral)...');
 
         const config = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
@@ -256,12 +271,14 @@ class Dock2Tauri {
             "plugins": {}
         };
 
+        const tmpPath = path.join(os.tmpdir(), `tauri.conf.${Date.now()}.${Math.random().toString(36).slice(2)}.json`);
         try {
-            fs.writeFileSync(this.configFile, JSON.stringify(config, null, 2));
-            logger.success('Tauri configuration updated');
+            fs.writeFileSync(tmpPath, JSON.stringify(config, null, 2));
+            this.tauriConfigPath = tmpPath;
+            logger.success(`Ephemeral Tauri configuration prepared at ${tmpPath}`);
             return true;
         } catch (error) {
-            logger.error(`Failed to update Tauri config: ${error.message}`);
+            logger.error(`Failed to prepare Tauri config: ${error.message}`);
             return false;
         }
     }
@@ -303,6 +320,10 @@ class Dock2Tauri {
                     }
                 } else {
                     args = ['tauri', 'dev'];
+                }
+
+                if (this.tauriConfigPath) {
+                    args.push('--config', this.tauriConfigPath);
                 }
 
                 const tauriProcess = spawn(command, args, {
@@ -354,11 +375,14 @@ class Dock2Tauri {
             }
         }
 
-        // Restore config backup
-        const backupFile = this.configFile + '.backup';
-        if (fs.existsSync(backupFile)) {
-            fs.renameSync(backupFile, this.configFile);
-            logger.success('Tauri configuration restored');
+        // Remove ephemeral config
+        if (this.tauriConfigPath && fs.existsSync(this.tauriConfigPath)) {
+            try {
+                fs.unlinkSync(this.tauriConfigPath);
+                logger.success('Removed ephemeral Tauri config');
+            } catch (e) {
+                logger.warning(`Failed to remove ephemeral config: ${e.message}`);
+            }
         }
     }
 
@@ -373,7 +397,7 @@ class Dock2Tauri {
             if (!(await this.checkDependencies())) {
                 return false;
             }
-
+            await this.prepareImageOrDockerfile();
             await this.stopExistingContainers();
 
             if (!(await this.launchContainer())) {
@@ -381,7 +405,7 @@ class Dock2Tauri {
             }
 
             await this.waitForService();
-            await this.updateTauriConfig();
+            this.generateTauriConfig();
 
             // Launch Tauri (this will block until app exits)
             await this.launchTauri();
@@ -407,16 +431,18 @@ class Dock2Tauri {
 function showHelp() {
     console.log('Dock2Tauri - Docker to Desktop Bridge');
     console.log('');
-    console.log('Usage: node dock2tauri.js [IMAGE] [HOST_PORT] [CONTAINER_PORT] [OPTIONS]');
+    console.log('Usage: node dock2tauri.js [IMAGE|Dockerfile] [HOST_PORT] [CONTAINER_PORT] [OPTIONS]');
     console.log('');
     console.log('Arguments:');
-    console.log('  IMAGE           Docker image to run (default: nginx:alpine)');
+    console.log('  IMAGE|Dockerfile  Docker image to run OR path to Dockerfile (default: nginx:alpine)');
     console.log('  HOST_PORT       Host port to bind to (default: 8088)');
     console.log('  CONTAINER_PORT  Container port to expose (default: 80)');
     console.log('');
     console.log('Options:');
-    console.log('  --build         Build Tauri release bundles instead of running dev mode');
-    console.log('  --target=<triple> Pass target triple to cargo tauri build');
+    console.log('  --build (-b)       Build Tauri release bundles instead of running dev mode');
+    console.log('  --target=<triple>  Pass target triple to cargo tauri build');
+    console.log('  --health-url=<url> Override readiness URL (default: http://localhost:HOST_PORT)');
+    console.log('  --timeout=<seconds> Readiness timeout in seconds (default: 30)');
     console.log('');
     console.log('Examples:');
     console.log('  node dock2tauri.js nginx:alpine 8088 80');
@@ -449,6 +475,8 @@ async function main() {
     // Parse flags
     let buildRelease = false;
     let buildTarget = null;
+    let healthUrl = null;
+    let timeout = 30;
     const positionalArgs = [];
 
     for (const arg of args) {
@@ -456,6 +484,11 @@ async function main() {
             buildRelease = true;
         } else if (arg.startsWith('--target=')) {
             buildTarget = arg.split('=')[1];
+        } else if (arg.startsWith('--health-url=')) {
+            healthUrl = arg.split('=')[1];
+        } else if (arg.startsWith('--timeout=')) {
+            const v = parseInt(arg.split('=')[1], 10);
+            if (!Number.isNaN(v)) timeout = v;
         } else if (!arg.startsWith('-')) {
             positionalArgs.push(arg);
         }
@@ -473,6 +506,8 @@ async function main() {
 
     // Create and run Dock2Tauri instance
     const dock2tauri = new Dock2Tauri(image, hostPort, containerPort, buildRelease, buildTarget);
+    if (healthUrl) dock2tauri.healthUrl = healthUrl;
+    if (timeout) dock2tauri.timeout = timeout;
     
     try {
         const success = await dock2tauri.run();

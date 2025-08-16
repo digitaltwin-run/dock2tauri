@@ -14,6 +14,8 @@ import subprocess
 import sys
 import time
 import urllib.request
+import tempfile
+import shutil
 from pathlib import Path
 
 class Colors:
@@ -52,6 +54,9 @@ class Dock2Tauri:
         self.config_file = self.base_dir / "src-tauri" / "tauri.conf.json"
         self.build_release = build_release
         self.build_target = build_target
+        self.health_url = None
+        self.timeout = 30
+        self.tauri_config_path = None
 
     def check_dependencies(self):
         """Check if required dependencies are available."""
@@ -111,6 +116,24 @@ class Dock2Tauri:
         except Exception as e:
             Logger.warning(f"Error during cleanup: {e}")
 
+    def prepare_image_or_dockerfile(self):
+        """If image is a Dockerfile path, build a local image tag and use it."""
+        try:
+            dockerfile = Path(self.image)
+            if dockerfile.exists() and dockerfile.is_file():
+                ctx = dockerfile.parent
+                base = dockerfile.name.lower().replace(' ', '-').replace('/', '-')
+                tag = f"dock2tauri-local-{base}-{int(time.time()*1000)}"
+                Logger.info(f"Building Docker image from {dockerfile} (context: {ctx}) as {tag} ...")
+                subprocess.run([
+                    "docker", "build", "-f", str(dockerfile), "-t", tag, str(ctx)
+                ], check=True)
+                self.image = tag
+                self.container_name = f"dock2tauri-{self.image.replace(':', '-').replace('/', '-')}-{self.host_port}"
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to build Dockerfile: {e}")
+            raise
+
     def launch_container(self):
         """Launch the Docker container."""
         Logger.info("Launching Docker container...")
@@ -140,34 +163,24 @@ class Dock2Tauri:
     def wait_for_service(self):
         """Wait for the service to be ready."""
         Logger.info("Waiting for service to be ready...")
-        
-        for i in range(30):
+        url = self.health_url or f"http://localhost:{self.host_port}"
+        timeout = int(self.timeout) if self.timeout else 30
+        for _ in range(timeout):
             try:
-                with urllib.request.urlopen(
-                    f"http://localhost:{self.host_port}", 
-                    timeout=1
-                ) as response:
-                    if response.status == 200:
+                with urllib.request.urlopen(url, timeout=1) as response:
+                    if 200 <= response.status < 400:
                         Logger.success("Service is ready!")
                         return True
-            except:
+            except Exception:
                 print(".", end="", flush=True)
                 time.sleep(1)
-        
         print()  # New line
         Logger.warning("Service might not be ready yet, but continuing...")
         return False
 
-    def update_tauri_config(self):
-        """Update Tauri configuration with Docker URL."""
-        Logger.info("Updating Tauri configuration...")
-        
-        # Create backup
-        backup_file = self.config_file.with_suffix('.json.backup')
-        if self.config_file.exists():
-            import shutil
-            shutil.copy2(self.config_file, backup_file)
-        
+    def generate_tauri_config(self):
+        """Generate ephemeral Tauri configuration to be merged via --config."""
+        Logger.info("Preparing Tauri configuration (ephemeral)...")
         config = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
             "productName": f"Dock2Tauri - {''.join(c for c in self.image.split(':')[0] if c not in '/\\:*?\"<>|')}",
@@ -180,9 +193,7 @@ class Dock2Tauri:
                 "frontendDist": "../app"
             },
             "app": {
-                "security": {
-                    "csp": None
-                },
+                "security": {"csp": None},
                 "windows": [{
                     "title": f"Dock2Tauri - {self.image}",
                     "width": 1200,
@@ -206,14 +217,15 @@ class Dock2Tauri:
             },
             "plugins": {}
         }
-        
         try:
-            with open(self.config_file, 'w') as f:
+            fd, tmp_path = tempfile.mkstemp(prefix="tauri.conf.", suffix=".json")
+            with os.fdopen(fd, 'w') as f:
                 json.dump(config, f, indent=2)
-            Logger.success("Tauri configuration updated")
+            self.tauri_config_path = tmp_path
+            Logger.success(f"Ephemeral Tauri configuration prepared at {tmp_path}")
             return True
         except Exception as e:
-            Logger.error(f"Failed to update Tauri config: {e}")
+            Logger.error(f"Failed to prepare Tauri config: {e}")
             return False
 
     def launch_tauri(self):
@@ -236,6 +248,8 @@ class Dock2Tauri:
                     cmd = ["cargo", "tauri", "build"]
             else:
                 cmd = ["cargo", "tauri", "dev"]
+            if self.tauri_config_path:
+                cmd += ["--config", self.tauri_config_path]
             
             # Try Tauri CLI first
             if self._command_exists("cargo"):
@@ -269,11 +283,13 @@ class Dock2Tauri:
             except Exception as e:
                 Logger.warning(f"Error during container cleanup: {e}")
         
-        # Restore config backup
-        backup_file = self.config_file.with_suffix('.json.backup')
-        if backup_file.exists():
-            backup_file.rename(self.config_file)
-            Logger.success("Tauri configuration restored")
+        # Remove ephemeral config
+        if self.tauri_config_path and Path(self.tauri_config_path).exists():
+            try:
+                Path(self.tauri_config_path).unlink()
+                Logger.success("Removed ephemeral Tauri config")
+            except Exception as e:
+                Logger.warning(f"Failed to remove ephemeral config: {e}")
 
     def run(self):
         """Main execution flow."""
@@ -284,13 +300,14 @@ class Dock2Tauri:
             if not self.check_dependencies():
                 return False
             
+            self.prepare_image_or_dockerfile()
             self.stop_existing_containers()
             
             if not self.launch_container():
                 return False
             
             self.wait_for_service()
-            self.update_tauri_config()
+            self.generate_tauri_config()
             
             # Launch Tauri (this will block until app exits)
             self.launch_tauri()
@@ -307,12 +324,21 @@ class Dock2Tauri:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Dock2Tauri - Transform Docker containers into desktop apps"
+        description="Dock2Tauri - Transform Docker containers into desktop apps",
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  python3 scripts/dock2tauri.py --image nginx:alpine --host-port 8088 --container-port 80\n"
+            "  python3 scripts/dock2tauri.py -i ./Dockerfile -p 8088 -c 80 --build\n"
+            "  python3 scripts/dock2tauri.py -i grafana/grafana -p 3001 -c 3000 --health-url http://localhost:3001/login --timeout 60\n\n"
+            "Environment Variables:\n"
+            "  DOCK2TAURI_DEBUG=1    Enable debug mode\n"
+        )
     )
     parser.add_argument(
         "--image", "-i",
         default="nginx:alpine",
-        help="Docker image to run (default: nginx:alpine)"
+        help="Docker image to run or path to Dockerfile (default: nginx:alpine)"
     )
     parser.add_argument(
         "--host-port", "-p",
@@ -327,9 +353,9 @@ def main():
         help="Container port to expose (default: 80)"
     )
     parser.add_argument(
-        "--build",
+        "--build", "-b",
         action="store_true",
-        help="Build Tauri application"
+        help="Build Tauri release bundles instead of running dev mode"
     )
     parser.add_argument(
         "--target",
@@ -340,15 +366,34 @@ def main():
         action="store_true",
         help="Enable debug mode"
     )
+    parser.add_argument(
+        "--health-url",
+        help="Override readiness URL (default: http://localhost:HOST_PORT)"
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="Readiness timeout in seconds (default: 30)"
+    )
     
     args = parser.parse_args()
+    
+    # Respect DOCK2TAURI_DEBUG=1 environment variable
+    if os.getenv("DOCK2TAURI_DEBUG") == "1" and not args.debug:
+        args.debug = True
     
     if args.debug:
         import logging
         logging.basicConfig(level=logging.DEBUG)
+        Logger.info("Debug mode enabled")
     
     # Create and run Dock2Tauri instance
     dock2tauri = Dock2Tauri(args.image, args.host_port, args.container_port, args.build, args.target)
+    if args.health_url:
+        dock2tauri.health_url = args.health_url
+    if args.timeout:
+        dock2tauri.timeout = args.timeout
     
     success = dock2tauri.run()
     sys.exit(0 if success else 1)

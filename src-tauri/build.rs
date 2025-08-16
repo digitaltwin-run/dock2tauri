@@ -1,4 +1,7 @@
 fn main() {
+  // Rebuild only if these files change
+  println!("cargo:rerun-if-changed=build.rs");
+  println!("cargo:rerun-if-changed=icons/icon.png");
   // Ensure a placeholder icon exists to satisfy tauri-build during dev
   ensure_placeholder_icon();
   tauri_build::build()
@@ -7,7 +10,6 @@ fn main() {
 fn ensure_placeholder_icon() {
   use std::fs;
   use std::path::Path;
-  use image::{open as open_image, RgbaImage};
 
   let icons_dir = Path::new("icons");
   let icon_path = icons_dir.join("icon.png");
@@ -19,19 +21,8 @@ fn ensure_placeholder_icon() {
     }
   }
   if icon_path.exists() {
-    // Try to load and re-save as RGBA8 to satisfy tauri-build
-    match open_image(&icon_path) {
-      Ok(img) => {
-        let rgba: RgbaImage = img.to_rgba8();
-        if let Err(e) = rgba.save(&icon_path) {
-          eprintln!("warning: failed to rewrite icon as RGBA8: {e}");
-        }
-      }
-      Err(e) => {
-        eprintln!("warning: failed to read existing icon, writing placeholder: {e}");
-        write_placeholder_rgba_png(&icon_path);
-      }
-    }
+    // Leave existing icon untouched to avoid dev rebuild loops
+    return;
   } else {
     write_placeholder_rgba_png(&icon_path);
   }

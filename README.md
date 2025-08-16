@@ -17,6 +17,8 @@ Dock2Tauri is a lightweight bridge that allows you to run any Docker container a
 - 🌐 **Auto Browser Integration**: Automatically opens container web interfaces
 - ⚡ **Hot Configuration**: Dynamic port mapping and container settings
 - 🔧 **Tauri v2 Compatible**: Proper schema validation and configuration
+- 🧪 **Health Checks**: Configurable readiness URL and timeout
+- 🧹 **Ephemeral Tauri config**: Generated on the fly and passed via `--config`; no mutations to `src-tauri/tauri.conf.json`
 
 ## 🚀 Quick Start
 
@@ -97,6 +99,8 @@ All three launchers (Bash, Python, Node.js) now support the same flags and funct
 - `--build` / `-b`: Build Tauri release bundles instead of dev mode
 - `--target=<triple>`: Specify target architecture for cross-compilation
 - `--help` / `-h`: Show help information
+ - `--health-url=<url>`: Override readiness URL (default: `http://localhost:HOST_PORT`)
+ - `--timeout=<seconds>`: Readiness timeout (default: `30`)
 
 ### Dockerfile Support
 All launchers can build and serve local Docker images from Dockerfiles:
@@ -112,35 +116,38 @@ The `./app` folder content will be served by the built container.
 ### Method 1: Bash Script (Recommended)
 ```bash
 # Basic usage
-./scripts/dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>]
+./scripts/dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>] [--health-url=<url>] [--timeout=<seconds>]
 
 # Examples
 ./scripts/dock2tauri.sh nginx:alpine 8088 80
 ./scripts/dock2tauri.sh ./Dockerfile 8088 80
 ./scripts/dock2tauri.sh grafana/grafana 3001 3000 --build
 ./scripts/dock2tauri.sh jupyter/scipy-notebook 8888 8888 --target=x86_64-pc-windows-gnu
+./scripts/dock2tauri.sh grafana/grafana 3001 3000 --health-url=http://localhost:3001/login --timeout=60
 ```
 
 ### Method 2: Python Script
 ```bash
 # Basic usage
-python3 scripts/dock2tauri.py --image <image> --host-port <port> --container-port <port> [--build] [--target <triple>]
+python3 scripts/dock2tauri.py --image <image> --host-port <port> --container-port <port> [--build|-b] [--target <triple>] [--health-url <url>] [--timeout <seconds>]
 
 # Examples
 python3 scripts/dock2tauri.py --image nginx:alpine --host-port 8088 --container-port 80
 python3 scripts/dock2tauri.py --image grafana/grafana --host-port 3001 --container-port 3000 --build
 python3 scripts/dock2tauri.py --image jupyter/scipy-notebook --host-port 8888 --container-port 8888 --target x86_64-pc-windows-gnu
+python3 scripts/dock2tauri.py -i grafana/grafana -p 3001 -c 3000 --health-url http://localhost:3001/login --timeout 60
 ```
 
 ### Method 3: Node.js Script
 ```bash
 # Basic usage
-node scripts/dock2tauri.js [image] [host-port] [container-port] [--build] [--target=<triple>]
+node scripts/dock2tauri.js [image|Dockerfile] [host-port] [container-port] [--build|-b] [--target=<triple>] [--health-url=<url>] [--timeout=<seconds>]
 
 # Examples
 node scripts/dock2tauri.js nginx:alpine 8088 80
 node scripts/dock2tauri.js grafana/grafana 3001 3000 --build
 node scripts/dock2tauri.js jupyter/scipy-notebook 8888 8888 --target=x86_64-pc-windows-gnu
+node scripts/dock2tauri.js grafana/grafana 3001 3000 --health-url=http://localhost:3001/login --timeout=60
 ```
 
 ### Method 4: Makefile Commands
@@ -212,6 +219,7 @@ All launchers generate valid Tauri v2 configuration with:
 - Bundle targets for AppImage, .deb, .rpm
 - Security policies and window settings
 - Icon handling with fallback generation
+ - Ephemeral config path passed via `cargo tauri --config` without modifying `src-tauri/tauri.conf.json`
 
 ### Build System
 - Uses `build.rs` to generate valid PNG icons automatically

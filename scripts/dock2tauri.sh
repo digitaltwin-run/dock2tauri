@@ -1,9 +1,11 @@
 #!/bin/bash
 
 # Dock2Tauri Bash Launcher
-# Usage: ./dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>]
+# Usage: ./dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>] [--health-url=<url>] [--timeout=<seconds>]
 #   --build (-b)        Build Tauri release bundles instead of running `tauri dev`
 #   --target=<triple>   Pass target triple to `cargo tauri build`, e.g. --target=x86_64-pc-windows-gnu
+#   --health-url=<url>  Override readiness URL (default: http://localhost:HOST_PORT)
+#   --timeout=<seconds> Readiness timeout in seconds (default: 30)
 
 set -e
 
@@ -54,11 +56,17 @@ HOST_PORT="${2:-8088}"
 CONTAINER_PORT="${3:-80}"
 BUILD_RELEASE=false
 BUILD_TARGET=""
+HEALTH_URL=""
+TIMEOUT=30
 for arg in "$@"; do
   if [ "$arg" = "--build" ] || [ "$arg" = "-b" ]; then
     BUILD_RELEASE=true
   elif [[ "$arg" == --target=* ]]; then
     BUILD_TARGET="${arg#*=}"
+  elif [[ "$arg" == --health-url=* ]]; then
+    HEALTH_URL="${arg#*=}"
+  elif [[ "$arg" == --timeout=* ]]; then
+    TIMEOUT="${arg#*=}"
   fi
 done
 CONTAINER_NAME="dock2tauri-$(echo "$DOCKER_IMAGE" | sed 's/[^a-zA-Z0-9]/-/g')-$HOST_PORT"
@@ -128,30 +136,33 @@ launch_container() {
 
 wait_for_service() {
     log_info "Waiting for service to be ready..."
-    
-    for i in {1..30}; do
-        if curl -s --connect-timeout 1 "http://localhost:$HOST_PORT" >/dev/null 2>&1; then
+    local url
+    if [ -n "$HEALTH_URL" ]; then
+        url="$HEALTH_URL"
+    else
+        url="http://localhost:$HOST_PORT"
+    fi
+    local i=0
+    while [ $i -lt $TIMEOUT ]; do
+        if curl -s --connect-timeout 1 "$url" >/dev/null 2>&1; then
             log_success "Service is ready!"
             return 0
         fi
         echo -n "."
         sleep 1
+        i=$((i+1))
     done
-    
+    echo
     log_warning "Service might not be ready yet, but continuing..."
 }
 
-update_tauri_config() {
-    log_info "Updating Tauri configuration..."
-    CONFIG_FILE="$BASE_DIR/src-tauri/tauri.conf.json"
-    if [ -f "$CONFIG_FILE" ]; then
-        # Create backup
-        cp "$CONFIG_FILE" "$CONFIG_FILE.backup"
-        # Update configuration (Tauri v2 schema)
-        cat > "$CONFIG_FILE" << EOF
+generate_tauri_config_json() {
+    log_info "Preparing Tauri configuration (ephemeral)..."
+    TAURI_CONFIG_PATH=$(mktemp -t tauri.conf.XXXXXX.json)
+    cat > "$TAURI_CONFIG_PATH" << EOF
 {
   "\$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1 | sed 's|[/\\:*?\"<>|]||g')",
+  "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1 | sed 's|[/\\:*?"<>|]||g')",
   "version": "1.0.0",
   "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
   "build": {
@@ -190,23 +201,20 @@ update_tauri_config() {
   "plugins": {}
 }
 EOF
-        log_success "Tauri configuration updated"
-    else
-        log_warning "Tauri config not found, skipping update"
-    fi
+    log_success "Ephemeral Tauri configuration prepared at $TAURI_CONFIG_PATH"
 }
 
 launch_tauri() {
     if $BUILD_RELEASE; then
         log_info "Building Tauri release bundles (cargo tauri build)..."
         if [ -n "$BUILD_TARGET" ]; then
-            (cd "$BASE_DIR/src-tauri" && cargo tauri build --target "$BUILD_TARGET")
+            (cd "$BASE_DIR/src-tauri" && cargo tauri build --config "$TAURI_CONFIG_PATH" --target "$BUILD_TARGET")
         else
-            (cd "$BASE_DIR/src-tauri" && cargo tauri build)
+            (cd "$BASE_DIR/src-tauri" && cargo tauri build --config "$TAURI_CONFIG_PATH")
         fi
     else
         log_info "Launching Tauri application (dev)..."
-        (cd "$BASE_DIR/src-tauri" && cargo tauri dev)
+        (cd "$BASE_DIR/src-tauri" && cargo tauri dev --config "$TAURI_CONFIG_PATH")
     fi
 }
 
@@ -217,12 +225,10 @@ cleanup() {
         docker rm "$CONTAINER_ID" 2>/dev/null || true
         log_success "Container stopped and removed"
     fi
-    
-    # Restore config backup if exists
-    CONFIG_FILE="$BASE_DIR/src-tauri/tauri.conf.json"
-    if [ -f "$CONFIG_FILE.backup" ]; then
-        mv "$CONFIG_FILE.backup" "$CONFIG_FILE"
-        log_success "Tauri configuration restored"
+    # Remove ephemeral Tauri config
+    if [ -n "$TAURI_CONFIG_PATH" ] && [ -f "$TAURI_CONFIG_PATH" ]; then
+        rm -f "$TAURI_CONFIG_PATH"
+        log_success "Removed ephemeral Tauri config"
     fi
 }
 
@@ -238,7 +244,7 @@ main() {
     stop_existing_container
     launch_container
     wait_for_service
-    update_tauri_config
+    generate_tauri_config_json
     
     # Launch Tauri (this will block until app exits)
     launch_tauri
@@ -248,7 +254,7 @@ main() {
 show_help() {
     echo "Dock2Tauri - Docker to Desktop Bridge"
     echo ""
-    echo "Usage: $0 <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>]"
+    echo "Usage: $0 <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>] [--health-url=<url>] [--timeout=<seconds>]"
     echo ""
     echo "Arguments:"
     echo "  IMAGE           Docker image to run OR path to Dockerfile (default: nginx:alpine)"
@@ -258,6 +264,8 @@ show_help() {
     echo "Options:"
     echo "  --build (-b)        Build Tauri release bundles instead of running 'tauri dev'"
     echo "  --target=<triple>   Pass target triple to 'cargo tauri build'"
+    echo "  --health-url=<url>  Override readiness URL (default: http://localhost:HOST_PORT)"
+    echo "  --timeout=<seconds> Readiness timeout in seconds (default: 30)"
     echo ""
     echo "Examples:"
     echo "  $0 nginx:alpine 8088 80"
