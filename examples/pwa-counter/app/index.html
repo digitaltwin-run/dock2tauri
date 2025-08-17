@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#16a34a" />
+  <title>Dock2Tauri PWA - Counter</title>
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:#04120a;color:#e5e7eb}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{max-width:720px;width:100%;background:#052d17;border:1px solid #0a3b20;border-radius:12px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+    h1{margin:0 0 8px;font-size:28px;color:#86efac}
+    p{margin:8px 0 0;color:#cbd5e1}
+    .row{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    .count{min-width:64px;text-align:center;font-size:24px;background:#03190e;border:1px solid #0a3b20;padding:10px 16px;border-radius:8px}
+    button{background:#16a34a;color:#011d0f;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+    button:disabled{opacity:.5;cursor:not-allowed}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Dock2Tauri PWA — Counter</h1>
+      <p>Single-file PWA counter with localStorage and offline cache (best-effort).</p>
+      <div class="row">
+        <button id="dec">-</button>
+        <span id="count" class="count">0</span>
+        <button id="inc">+</button>
+        <button id="reset">Reset</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const el = {
+      count: document.getElementById('count'),
+      inc: document.getElementById('inc'),
+      dec: document.getElementById('dec'),
+      reset: document.getElementById('reset')
+    };
+    const key='pwa-counter:value';
+    let v = parseInt(localStorage.getItem(key)||'0',10)||0;
+    function render(){ el.count.textContent = String(v); }
+    function save(){ localStorage.setItem(key,String(v)); }
+    el.inc.onclick=()=>{ v++; save(); render(); };
+    el.dec.onclick=()=>{ v--; save(); render(); };
+    el.reset.onclick=()=>{ v=0; save(); render(); };
+    render();
+
+    (function registerSW(){
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        const swCode = `const CACHE='pwa-counter-v1';
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/','/index.html']).catch(()=>{})))});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{const copy=resp.clone();if(e.request.method==='GET'&&resp.ok){caches.open(CACHE).then(c=>c.put(e.request,copy)).catch(()=>{});}return resp;}).catch(()=>caches.match('/index.html'))))});`;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const url = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(url).catch(()=>{});
+      } catch(e) { /* noop */ }
+    })();
+  </script>
+</body>
+</html>

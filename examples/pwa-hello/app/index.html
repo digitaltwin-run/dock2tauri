@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <title>Dock2Tauri PWA - Hello</title>
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:#0b1220;color:#e5e7eb}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{max-width:720px;width:100%;background:#0f172a;border:1px solid #1f2937;border-radius:12px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+    h1{margin:0 0 8px;font-size:28px;color:#93c5fd}
+    p{margin:8px 0 0;color:#cbd5e1}
+    .muted{opacity:.7}
+    .row{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#0ea5e918;color:#7dd3fc;border:1px solid #0ea5e9}
+    button{background:#0ea5e9;color:#001827;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .time{font-variant-numeric:tabular-nums;background:#111827;border:1px solid #1f2937;padding:8px 10px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Dock2Tauri PWA — Hello</h1>
+      <p>Minimal single-file PWA served via Nginx. Works offline (best-effort).</p>
+      <div class="row"><span class="pill">Single-file</span><span class="pill">Offline cache</span><span class="pill">Local time</span></div>
+      <div class="row"><span>Now:</span><span id="now" class="time">--:--:--</span><button id="refresh">Refresh</button></div>
+      <p class="muted">Tip: Try turn off network and refresh — page should load from cache when served on localhost.</p>
+    </div>
+  </div>
+  <script>
+    const elNow = document.getElementById('now');
+    function tick(){
+      const d = new Date();
+      elNow.textContent = d.toLocaleString();
+    }
+    tick();
+    document.getElementById('refresh').addEventListener('click', tick);
+
+    // Register a minimal Service Worker from a Blob (best-effort). Some environments (e.g., Tauri asset protocol) may not support SW.
+    (function registerSW(){
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        const swCode = `const CACHE='pwa-hello-v1';
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/','/index.html']).catch(()=>{})))});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{const copy=resp.clone();if(e.request.method==='GET'&&resp.ok){caches.open(CACHE).then(c=>c.put(e.request,copy)).catch(()=>{});}return resp;}).catch(()=>caches.match('/index.html'))))});`;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const url = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(url).catch(()=>{});
+      } catch(e) { /* noop */ }
+    })();
+  </script>
+</body>
+</html>
