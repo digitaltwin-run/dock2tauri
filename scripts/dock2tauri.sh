@@ -37,6 +37,41 @@ log_warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
+# RPM conflict prevention - automatically cleanup existing dock2tauri packages
+cleanup_existing_rpm_packages() {
+  if ! command -v rpm >/dev/null 2>&1; then
+    log_info "RPM not available, skipping package cleanup"
+    return 0
+  fi
+  
+  log_info "Checking for existing dock2tauri RPM packages..."
+  local existing_packages
+  existing_packages=$(rpm -qa | grep -E "(dock2.*tauri|tauri.*dock)" 2>/dev/null || true)
+  
+  if [ -z "$existing_packages" ]; then
+    log_info "No existing dock2tauri packages found"
+    return 0
+  fi
+  
+  log_warning "Found existing dock2tauri packages, removing to prevent conflicts:"
+  echo "$existing_packages" | while read -r pkg; do
+    echo "  - $pkg"
+  done
+  
+  # Try to remove packages silently (non-interactive)
+  if echo "$existing_packages" | xargs sudo -n rpm -e 2>/dev/null; then
+    log_success "Successfully removed existing packages"
+  elif echo "$existing_packages" | xargs sudo -n rpm -e --nodeps 2>/dev/null; then
+    log_success "Successfully removed existing packages (with --nodeps)"
+  else
+    log_warning "Could not auto-remove packages (sudo access needed). Manual removal may be required:"
+    echo "$existing_packages" | while read -r pkg; do
+      echo "  sudo rpm -e --force --nodeps '$pkg'"
+    done
+    log_info "Continuing with build (conflicts may occur during installation)..."
+  fi
+}
+
 # Configuration
 INPUT_IMAGE_OR_DOCKERFILE="${1:-nginx:alpine}"
 # If the first argument is a file that exists (Dockerfile) build a local image
@@ -252,7 +287,7 @@ generate_tauri_config_json() {
     cat > "$TAURI_CONFIG_PATH" << EOF
 {
   "\$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "Dock2Tauri - $(echo $DOCKER_IMAGE | cut -d':' -f1 | sed 's|[/\:*?"<>|]||g')",
+  "productName": "Dock2Tauri-$(echo $DOCKER_IMAGE | cut -d':' -f1 | sed 's|[/\:*?"<>|]||g')",
   "version": "1.0.0",
   "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
   "build": {
@@ -267,7 +302,7 @@ generate_tauri_config_json() {
     },
     "windows": [
       {
-        "title": "Dock2Tauri - $DOCKER_IMAGE",
+        "title": "Dock2Tauri-$DOCKER_IMAGE",
         "width": 1200,
         "height": 800,
         "minWidth": 600,
@@ -476,6 +511,10 @@ generate_platform_readme() {
 
 build_and_export() {
   log_info "Building Tauri release bundles (multi-target export)..."
+  
+  # Automatically cleanup existing RPM packages to prevent conflicts
+  cleanup_existing_rpm_packages
+  
   mkdir -p "$EXPORT_DIR"
 
   # If user specified a single target, build only that

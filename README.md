@@ -292,6 +292,8 @@ python3 scripts/dock2tauri.py --image jupyter/scipy-notebook --host-port 8888 --
 python3 scripts/dock2tauri.py -i grafana/grafana -p 3001 -c 3000 --health-url http://localhost:3001/login --timeout 60
 ```
 
+![img_2.png](img_2.png)
+
 ### Method 4: Node.js Script
 ```bash
 # Basic usage

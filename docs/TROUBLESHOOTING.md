@@ -75,6 +75,27 @@ export DOCK2TAURI_CROSS_TARGETS="x86_64-unknown-linux-gnu"
 
 **Root cause:** macOS cross-compilation requires Apple SDK and osxcross toolchain.
 
+#### ❌ RPM Package Conflicts
+**Symptoms:**
+- `file /usr/bin/my-tauri-app from install of... conflicts with file from package...`
+- Cannot install new RPM due to file conflicts
+
+**Solutions:**
+```bash
+# Option 1: Remove old package first
+rpm -qa | grep dock2
+sudo rpm -e <old-package-name>
+sudo rpm -i <new-package.rpm>
+
+# Option 2: Use upgrade instead of install
+sudo rpm -U <new-package.rpm>
+
+# Option 3: Force installation (risky)
+sudo rpm -i --force <new-package.rpm>
+```
+
+**Root cause:** Each build creates RPM with same package name and file paths but different timestamps, causing conflicts.
+
 #### ❌ Tauri Schema Validation Errors
 **Symptoms:**
 - Schema validation warnings
