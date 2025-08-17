@@ -209,10 +209,20 @@ generate_tauri_config_json() {
       else
         log_warning "rpmbuild not found; skipping RPM bundle."
       fi
-      if command -v linuxdeploy >/dev/null 2>&1 && command -v appimagetool >/dev/null 2>&1; then
-        targets+=("appimage")
+      if [ "${DOCK2TAURI_SKIP_APPIMAGE:-0}" = "1" ]; then
+        log_warning "DOCK2TAURI_SKIP_APPIMAGE=1 set; skipping AppImage bundle."
       else
-        log_warning "linuxdeploy/appimagetool not found; skipping AppImage bundle."
+        if command -v linuxdeploy >/dev/null 2>&1 && command -v appimagetool >/dev/null 2>&1; then
+          # Verify the AppImage tools are actually runnable on this system (e.g., FUSE-less mode)
+          if APPIMAGE_EXTRACT_AND_RUN=1 linuxdeploy --version >/dev/null 2>&1 \
+             && APPIMAGE_EXTRACT_AND_RUN=1 appimagetool --version >/dev/null 2>&1; then
+            targets+=("appimage")
+          else
+            log_warning "linuxdeploy/appimagetool present but not runnable; skipping AppImage bundle."
+          fi
+        else
+          log_warning "linuxdeploy/appimagetool not found; skipping AppImage bundle."
+        fi
       fi
       if [ ${#targets[@]} -eq 0 ]; then
         BUNDLE_ACTIVE=false
@@ -319,6 +329,10 @@ build_for_target() {
   log_info "Building bundles for target: ${t:-native} ..."
   (
     set +e
+    # Allow running AppImage tools (linuxdeploy/appimagetool) without FUSE by extracting on the fly
+    if command -v linuxdeploy >/dev/null 2>&1 || command -v appimagetool >/dev/null 2>&1; then
+      export APPIMAGE_EXTRACT_AND_RUN="${APPIMAGE_EXTRACT_AND_RUN:-1}"
+    fi
     cd "$BASE_DIR/src-tauri" && cargo "${args[@]}"
     rc=$?
     set -e
@@ -352,49 +366,18 @@ copy_bundles_to_dist() {
 # Generate README.md with usage instructions
 generate_platform_readme() {
   local dest_dir="$1"; local platform="$2"
-  cat > "$dest_dir/README.md" << README
-# Dock2Tauri - ${platform}
-
-This folder contains packaged desktop application bundles produced by Tauri for platform: ${platform}.
-
-## Install & Run
-
-### Linux (AppImage)
-- Make executable and run:
-  ```bash
-  chmod +x ./*.AppImage
-  ./Dock2Tauri*.AppImage
-  ```
-
-### Linux (.deb)
-- Install with APT:
-  ```bash
-  sudo apt install ./Dock2Tauri*.deb
-  # then run from desktop menu or:
-  Dock2Tauri
-  ```
-
-### Linux (.rpm)
-- Install with DNF/RPM:
-  ```bash
-  sudo dnf install ./Dock2Tauri*.rpm
-  # or
-  sudo rpm -i ./Dock2Tauri*.rpm
-  ```
-
-### Windows (.exe / NSIS)
-- Run the installer (or portable exe) and follow the prompts.
-
-### Windows (.msi)
-- Double click the MSI and follow the installer.
-
-### macOS (.dmg / .app)
-- Open the DMG, drag the app to Applications, then launch it.
-
-## Notes
-- Some bundle formats may not be present depending on your host OS and installed packagers.
-- To build additional targets, ensure Rust target toolchains and packaging tools are installed.
-README
+  {
+    printf '%s\n' "# Dock2Tauri - ${platform}" ""
+    printf '%s\n' "This folder contains packaged desktop application bundles produced by Tauri for platform: ${platform}." ""
+    printf '%s\n' "## Install & Run" ""
+    printf '%s\n' "### Linux (AppImage)" "- Make executable and run:" "  \`\`\`bash" "  chmod +x ./*.AppImage" "  ./Dock2Tauri*.AppImage" "  \`\`\`" ""
+    printf '%s\n' "### Linux (.deb)" "- Install with APT:" "  \`\`\`bash" "  sudo apt install ./Dock2Tauri*.deb" "  # then run from desktop menu or:" "  Dock2Tauri" "  \`\`\`" ""
+    printf '%s\n' "### Linux (.rpm)" "- Install with DNF/RPM:" "  \`\`\`bash" "  sudo dnf install ./Dock2Tauri*.rpm" "  # or" "  sudo rpm -i ./Dock2Tauri*.rpm" "  \`\`\`" ""
+    printf '%s\n' "### Windows (.exe / NSIS)" "- Run the installer (or portable exe) and follow the prompts." ""
+    printf '%s\n' "### Windows (.msi)" "- Double click the MSI and follow the installer." ""
+    printf '%s\n' "### macOS (.dmg / .app)" "- Open the DMG, drag the app to Applications, then launch it." ""
+    printf '%s\n' "## Notes" "- Some bundle formats may not be present depending on your host OS and installed packagers." "- To build additional targets, ensure Rust target toolchains and packaging tools are installed."
+  } > "$dest_dir/README.md"
 }
 
 build_and_export() {
@@ -404,26 +387,29 @@ build_and_export() {
   # If user specified a single target, build only that
   if [ -n "$BUILD_TARGET" ]; then
     if build_for_target "$BUILD_TARGET"; then
-      copy_bundles_to_dist "$BUILD_TARGET"
+      :
     else
-      log_warning "Build failed for target $BUILD_TARGET; skipping export for this target."
+      log_warning "Build failed for target $BUILD_TARGET; exporting any bundles produced before failure."
     fi
+    copy_bundles_to_dist "$BUILD_TARGET"
   else
     # Always build native
     if build_for_target ""; then
-      copy_bundles_to_dist ""
+      :
     else
-      log_warning "Build failed for native target; skipping export for native."
+      log_warning "Build failed for native target; exporting any bundles produced before failure."
     fi
+    copy_bundles_to_dist ""
     # Best-effort cross targets (only when explicitly enabled)
     if [ "$CROSS_BUILD" = "true" ]; then
       for t in "${CANDIDATE_TARGETS[@]}"; do
         if is_rust_target_installed "$t"; then
           if build_for_target "$t"; then
-            copy_bundles_to_dist "$t"
+            :
           else
-            log_warning "Build failed for target $t; skipping export for this target."
+            log_warning "Build failed for target $t; exporting any bundles produced before failure."
           fi
+          copy_bundles_to_dist "$t"
         else
           log_warning "Skipping target $t (rustup target not installed)"
         fi
@@ -470,6 +456,11 @@ build_android_best_effort() {
   # Check Android SDK presence
   if [ -z "$ANDROID_SDK_ROOT$ANDROID_HOME" ] && ! command -v sdkmanager >/dev/null 2>&1; then
     log_warning "Android SDK not detected; skipping Android build."
+    return 0
+  fi
+  # Ensure Android project is initialized
+  if [ ! -d "$BASE_DIR/src-tauri/gen/android" ]; then
+    log_warning "Android project not initialized; run 'cargo tauri android init' once (in src-tauri). Skipping Android build."
     return 0
   fi
   log_info "Attempting Android APK build (best-effort)..."
