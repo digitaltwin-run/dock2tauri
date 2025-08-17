@@ -22,7 +22,7 @@ YELLOW = \033[1;33m
 BLUE = \033[0;34m
 NC = \033[0m # No Color
 
-.PHONY: help install install-deps install-deps-dry-run test-install dev build clean test nginx grafana jupyter portainer launch stop-all
+.PHONY: help install install-deps install-deps-dry-run test-install dev build clean test nginx grafana jupyter portainer launch stop-all list logs status examples
 
 # Default target
 all: help

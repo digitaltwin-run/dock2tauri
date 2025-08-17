@@ -75,6 +75,34 @@ export DOCK2TAURI_CROSS_TARGETS="x86_64-unknown-linux-gnu"
 
 **Root cause:** macOS cross-compilation requires Apple SDK and osxcross toolchain.
 
+#### ❌ ARM64/aarch64 Cross-Compilation Failures
+**Symptoms:**
+- `pkg-config has not been configured to support cross-compilation`
+- GTK/GLib/Cairo build failures for aarch64-unknown-linux-gnu
+- Errors in glib-sys, gobject-sys, gdk-sys, etc.
+
+**Solutions:**
+```bash
+# Install ARM64 multiarch support (Ubuntu/Debian)
+sudo dpkg --add-architecture arm64
+sudo apt update
+sudo apt install -y libgtk-3-dev:arm64 libglib2.0-dev:arm64 libpango1.0-dev:arm64 libcairo2-dev:arm64 libgdk-pixbuf-2.0-dev:arm64
+
+# Configure pkg-config for cross-compilation
+export PKG_CONFIG=aarch64-linux-gnu-pkg-config
+export PKG_CONFIG_SYSROOT_DIR=/
+export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+
+# Verify pkg-config works
+aarch64-linux-gnu-pkg-config --exists gtk+-3.0
+
+# Skip problematic targets temporarily
+export DOCK2TAURI_CROSS_TARGETS="x86_64-unknown-linux-gnu"
+./scripts/dock2tauri.sh image 8088 80 --build --cross
+```
+
+**Root cause:** ARM64 cross-compilation requires proper sysroot, multiarch libraries, and pkg-config configuration for the target architecture.
+
 #### ❌ RPM Package Conflicts
 **Symptoms:**
 - `file /usr/bin/my-tauri-app from install of... conflicts with file from package...`
@@ -82,7 +110,7 @@ export DOCK2TAURI_CROSS_TARGETS="x86_64-unknown-linux-gnu"
 
 **Solutions:**
 ```bash
-# Option 1: Remove old package first
+# Option 1: Remove old package first (recommended)
 rpm -qa | grep dock2
 sudo rpm -e <old-package-name>
 sudo rpm -i <new-package.rpm>
@@ -90,11 +118,14 @@ sudo rpm -i <new-package.rpm>
 # Option 2: Use upgrade instead of install
 sudo rpm -U <new-package.rpm>
 
-# Option 3: Force installation (risky)
-sudo rpm -i --force <new-package.rpm>
+# Option 3: Remove with dependencies ignored
+sudo rpm -e --nodeps <old-package-name>
+sudo rpm -i <new-package.rpm>
 ```
 
 **Root cause:** Each build creates RPM with same package name and file paths but different timestamps, causing conflicts.
+
+**Automatic resolution:** Dock2Tauri now automatically detects and attempts to remove conflicting packages before building. However, this requires sudo access and may fail in non-interactive environments.
 
 #### ❌ Tauri Schema Validation Errors
 **Symptoms:**

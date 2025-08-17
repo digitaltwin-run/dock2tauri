@@ -167,6 +167,8 @@ Dock2Tauri has received major enhancements for stability and user experience:
 ### ✅ Enhanced Build System
 - **Ephemeral Tauri config** - no more git pollution from temporary configurations
 - **Dynamic bundler detection** - automatically adapts to available packaging tools
+- **Automatic RPM conflict resolution** - detects and removes conflicting packages before building
+- **Package naming fixes** - generated packages no longer contain spaces in filenames
 - **Improved error messages** with actionable solutions
 - **Better cross-platform reliability**
 
@@ -175,6 +177,55 @@ Dock2Tauri has received major enhancements for stability and user experience:
 - **Comprehensive troubleshooting** for common scenarios
 - **Development workflow** guides for contributors
 - **Long-term roadmap** with version planning
+
+## 🎯 Makefile Quick Commands
+
+Dock2Tauri provides convenient Makefile targets for common operations:
+
+### 📦 System Setup
+```bash
+make help                    # Show all available commands with descriptions
+make status                  # Display system status (Docker, Rust, Tauri, etc.)
+make install                 # Full installation (Rust, Tauri CLI, system dependencies)
+make install-deps            # Install system bundling dependencies only
+make install-deps-dry-run    # Preview dependency installation
+make test-install            # Validate installation scripts
+```
+
+### 🚀 Quick Launch Presets
+```bash
+make nginx                   # Launch Nginx web server (port 8088)
+make grafana                 # Launch Grafana dashboard (port 3001)  
+make jupyter                 # Launch Jupyter notebook (port 8888)
+make portainer               # Launch Portainer Docker UI (port 9000)
+
+# Custom launch with parameters
+make launch IMAGE=redis:alpine HOST_PORT=6379 CONTAINER_PORT=6379
+```
+
+### 🔧 Development & Testing
+```bash
+make dev                     # Start development mode with hot reload
+make build                   # Build production bundles
+make test                    # Run all launcher tests (Bash, Python, Node.js)
+make test-bash               # Test Bash launcher only
+make test-python             # Test Python launcher only  
+make test-nodejs             # Test Node.js launcher only
+```
+
+### 🧹 Container Management
+```bash
+make list                    # List active dock2tauri containers
+make logs                    # Show container logs
+make stop-all                # Stop and remove all dock2tauri containers
+make clean                   # Clean build artifacts and stop containers
+```
+
+### 📖 Help & Examples
+```bash
+make examples                # Show detailed usage examples
+make help                    # List all available commands
+```
 
 ## 📋 Usage Modes
 
@@ -214,11 +265,24 @@ This repo ships with simple single-file PWA examples for validation and demos:
 Build and export bundles directly from a Dockerfile (served by `nginx:alpine`):
 
 ```bash
+# Development mode (default) - opens Tauri app window
 ./scripts/dock2tauri.sh ./examples/pwa-hello/Dockerfile 8088 80
 ./scripts/dock2tauri.sh ./examples/pwa-counter/Dockerfile 8089 80
 ./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8090 80
+
+# Build production bundles (.deb, .rpm, etc.)
+./scripts/dock2tauri.sh ./examples/pwa-hello/Dockerfile 8088 80 --build
+./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8088 80 --build
+
+# Build with cross-compilation (requires toolchains)
+./scripts/dock2tauri.sh ./examples/pwa-hello/Dockerfile 8088 80 --build --cross
+./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8088 80 --build --cross
 ```
-Note (Bash): If the first argument is a Dockerfile and `--build` is NOT provided, the Bash launcher defaults to building and exporting bundles into `dist/`.
+
+**Note:** 
+- If the first argument is a Dockerfile and `--build` is NOT provided, the Bash launcher defaults to building and exporting bundles into `dist/`
+- Cross-compilation (`--cross`) automatically skips problematic targets and AppImage in cross-build mode
+- Generated packages no longer contain spaces in filenames: `Dock2Tauri-dock2tauri-local-dockerfile-...`
 
 ## 🔧 Unified CLI Interface
 
