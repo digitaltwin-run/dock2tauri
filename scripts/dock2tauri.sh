@@ -67,6 +67,10 @@ EXPORT_DIR="$BASE_DIR/dist"
 CROSS_BUILD=false
 # Candidate cross targets we may attempt if installed (best-effort)
 CANDIDATE_TARGETS=("x86_64-unknown-linux-gnu" "aarch64-unknown-linux-gnu" "x86_64-pc-windows-gnu" "x86_64-apple-darwin" "aarch64-apple-darwin")
+# Override candidate targets via environment variable (comma-separated)
+if [ -n "${DOCK2TAURI_CROSS_TARGETS:-}" ]; then
+  IFS=',' read -ra CANDIDATE_TARGETS <<< "$DOCK2TAURI_CROSS_TARGETS"
+fi
 for arg in "$@"; do
   if [ "$arg" = "--build" ] || [ "$arg" = "-b" ]; then
     BUILD_RELEASE=true
@@ -209,8 +213,13 @@ generate_tauri_config_json() {
       else
         log_warning "rpmbuild not found; skipping RPM bundle."
       fi
-      if [ "${DOCK2TAURI_SKIP_APPIMAGE:-0}" = "1" ]; then
-        log_warning "DOCK2TAURI_SKIP_APPIMAGE=1 set; skipping AppImage bundle."
+      # Auto-skip AppImage in cross-build mode (often fails) unless explicitly enabled
+      if [ "${DOCK2TAURI_SKIP_APPIMAGE:-0}" = "1" ] || ([ "$CROSS_BUILD" = "true" ] && [ "${DOCK2TAURI_FORCE_APPIMAGE:-0}" != "1" ]); then
+        if [ "$CROSS_BUILD" = "true" ] && [ "${DOCK2TAURI_SKIP_APPIMAGE:-0}" != "1" ]; then
+          log_warning "Cross-build mode detected; skipping AppImage (use DOCK2TAURI_FORCE_APPIMAGE=1 to override)."
+        else
+          log_warning "DOCK2TAURI_SKIP_APPIMAGE=1 set; skipping AppImage bundle."
+        fi
       else
         if command -v linuxdeploy >/dev/null 2>&1 && command -v appimagetool >/dev/null 2>&1; then
           # Verify the AppImage tools are actually runnable on this system (e.g., FUSE-less mode)
@@ -322,6 +331,91 @@ is_rust_target_installed() {
   rustup target list --installed | awk '{print $1}' | grep -qx "$t"
 }
 
+# Check if cross-compilation toolchain is available for a target
+can_cross_compile_target() {
+  local t="$1"
+  case "$t" in
+    x86_64-unknown-linux-gnu)
+      # Native or same arch, usually OK
+      return 0
+      ;;
+    aarch64-unknown-linux-gnu)
+      # Check for ARM64 cross compiler and pkg-config
+      if command -v aarch64-linux-gnu-gcc >/dev/null 2>&1 && \
+         (command -v aarch64-linux-gnu-pkg-config >/dev/null 2>&1 || [ -n "${PKG_CONFIG:-}" ]); then
+        return 0
+      fi
+      return 1
+      ;;
+    x86_64-pc-windows-gnu)
+      # Check for MinGW cross compiler
+      if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    x86_64-apple-darwin|aarch64-apple-darwin)
+      # Check for osxcross or macOS SDK
+      if [ -n "${OSXCROSS_ROOT:-}" ] && command -v o64-clang >/dev/null 2>&1; then
+        return 0
+      fi
+      if command -v x86_64-apple-darwin-clang >/dev/null 2>&1 || command -v aarch64-apple-darwin-clang >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    *)
+      # Unknown target, assume possible
+      return 0
+      ;;
+  esac
+}
+
+# Filter cross targets to only those that are feasible
+get_feasible_cross_targets() {
+  local feasible=()
+  local host_os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  
+  for t in "${CANDIDATE_TARGETS[@]}"; do
+    # Skip if rust target not installed
+    if ! is_rust_target_installed "$t"; then
+      continue
+    fi
+    
+    # Filter by host OS (avoid obvious mismatches unless tools are present)
+    case "$host_os" in
+      linux)
+        case "$t" in
+          *-apple-darwin) 
+            if ! can_cross_compile_target "$t"; then
+              continue
+            fi
+            ;;
+          *-pc-windows-*)
+            if ! can_cross_compile_target "$t"; then
+              continue
+            fi
+            ;;
+        esac
+        ;;
+      darwin)
+        case "$t" in
+          *-unknown-linux-*|*-pc-windows-*)
+            # macOS to Linux/Windows cross-compilation is complex
+            if ! can_cross_compile_target "$t"; then
+              continue
+            fi
+            ;;
+        esac
+        ;;
+    esac
+    
+    feasible+=("$t")
+  done
+  
+  printf '%s\n' "${feasible[@]}"
+}
+
 # Build for a specific target (or native if empty)
 build_for_target() {
   local t="$1"; local args=(tauri build --config "$TAURI_CONFIG_PATH")
@@ -402,18 +496,23 @@ build_and_export() {
     copy_bundles_to_dist ""
     # Best-effort cross targets (only when explicitly enabled)
     if [ "$CROSS_BUILD" = "true" ]; then
-      for t in "${CANDIDATE_TARGETS[@]}"; do
-        if is_rust_target_installed "$t"; then
+      # Get feasible targets (with toolchain filtering)
+      local feasible_targets
+      mapfile -t feasible_targets < <(get_feasible_cross_targets)
+      
+      if [ ${#feasible_targets[@]} -eq 0 ]; then
+        log_warning "No feasible cross-compilation targets found. Install toolchains or use DOCK2TAURI_CROSS_TARGETS to override."
+      else
+        log_info "Attempting cross-builds for feasible targets: ${feasible_targets[*]}"
+        for t in "${feasible_targets[@]}"; do
           if build_for_target "$t"; then
             :
           else
             log_warning "Build failed for target $t; exporting any bundles produced before failure."
           fi
           copy_bundles_to_dist "$t"
-        else
-          log_warning "Skipping target $t (rustup target not installed)"
-        fi
-      done
+        done
+      fi
     else
       log_info "Cross-target builds disabled by default. Use --cross to attempt them."
     fi

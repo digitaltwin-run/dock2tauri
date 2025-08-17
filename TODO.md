@@ -1,8 +1,8 @@
-# Dock2Tauri — TODO and Roadmap
+# Dock2Tauri — TODO and Progress Tracking
 
-Last updated: 2025-08-16
+Last updated: 2025-08-17
 
-This document tracks tasks and priorities for improving Dock2Tauri. It focuses on alignment across Tauri version(s), launcher parity, developer experience, documentation, and packaging.
+This document tracks immediate tasks and priorities for improving Dock2Tauri. For comprehensive roadmap and long-term planning, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 Conventions
 - Priority: P0 (critical) • P1 (important) • P2 (nice-to-have)
@@ -26,10 +26,10 @@ Conventions
   - [ ] Extract shared logic (config writer, wait-for-service, cleanup) to a small common module or keep a single source of truth (e.g., JSON template + substitutions) to eliminate drift.
   - Acceptance: README examples work identically across all 3 launchers.
 
-- [ ] Ephemeral Tauri config (area: tauri, dx) [P0]
+- [x] Ephemeral Tauri config (area: tauri, dx) [P0] - COMPLETED 2025-08-17
   - Problem: `src-tauri/tauri.conf.json` is mutated per run (productName/devUrl), creating noisy git diffs.
-  - [ ] Generate per-run config to a temporary file (or use env `TAURI_CONFIG`), keep a stable base template in repo.
-  - [ ] Ensure backups are cleaned up; confirm `.gitignore` covers temporary artifacts.
+  - [x] Generate per-run config to a temporary file (or use env `TAURI_CONFIG`), keep a stable base template in repo.
+  - [x] Ensure backups are cleaned up; confirm `.gitignore` covers temporary artifacts.
   - Acceptance: Running launchers does not leave uncommitted changes unless intended.
 
 - [ ] Readiness & health checks (area: launchers, ux) [P0]
@@ -47,11 +47,12 @@ Conventions
   - [ ] GitHub Actions: lint matrix (bash/python/node/rust), minimal `cargo tauri build` check.
   - [ ] Optional docker-in-docker to test quick launch flows (best-effort, may be flaky on runners).
 
-- [ ] Documentation (area: docs)
-  - [ ] Populate `docs/`:
-    - `architecture.md` — high-level overview (launchers, Tauri app, config flow).
-    - `troubleshooting.md` — Docker permissions, WebKitGTK warnings, Fedora bundling workaround.
-    - `launcher-parity.md` — flag matrix and support table.
+- [x] Documentation (area: docs) - COMPLETED 2025-08-17
+  - [x] Populate `docs/`:
+    - [x] `ARCHITECTURE.md` — comprehensive overview with component diagrams
+    - [x] `TROUBLESHOOTING.md` — detailed guide for common issues and solutions
+    - [x] `CONTRIBUTING.md` — development setup and contribution workflow
+    - [x] `ROADMAP.md` — long-term vision and version planning
   - [ ] README refresh: clarify supported Tauri major; link to docs; ensure examples mirror launcher parity.
 
 - [ ] UX improvements (area: ui, launchers)
@@ -79,9 +80,39 @@ Conventions
 - [ ] Makefile `status` target: confirm it detects CLI correctly on environments where only `cargo tauri` exists.
 - [ ] Improve `wait_for_service`: retries with exponential backoff, optional HEAD request.
 
-## Done
+## Recent Achievements (August 2025) ✅
 
-- [x] Create structured TODO.md and seed backlog (2025-08-16).
+- [x] **Cross-compilation Intelligence** (2025-08-17)
+  - Intelligent target filtering based on available toolchains
+  - Automatic AppImage skipping in cross-mode with override option
+  - Environment variable configuration (`DOCK2TAURI_CROSS_TARGETS`)
+  - Graceful handling of build failures with clear messaging
+
+- [x] **System Dependency Management** (2025-08-17)
+  - Created `scripts/install_deps.sh` with multi-distro support
+  - Makefile integration with configurable flags (`APPIMAGE=1 ARM64=1 YES=1`)
+  - ARM64 cross-compilation toolchain installer
+  - AppImage tools installation with FUSE-less environment support
+
+- [x] **Ephemeral Tauri Configuration** (2025-08-17)
+  - Generate per-run config to temporary files
+  - No git pollution or src-tauri mutations
+  - Proper cleanup and `.gitignore` coverage
+  - Uses `--config` flag for clean separation
+
+- [x] **Comprehensive Documentation Suite** (2025-08-17)
+  - `docs/ARCHITECTURE.md` — detailed system architecture with diagrams
+  - `docs/TROUBLESHOOTING.md` — comprehensive problem-solving guide
+  - `docs/CONTRIBUTING.md` — development setup and contribution workflow
+  - `docs/ROADMAP.md` — long-term vision and version planning
+
+## Done (Previous)
+
+- [x] Create structured TODO.md and seed backlog (2025-08-16)
+- [x] Multi-launcher support (Bash, Python, Node.js, Makefile)
+- [x] Docker container to desktop application bridging
+- [x] Cross-platform bundling (DEB, RPM, AppImage, DMG, MSI)
+- [x] PWA examples and Dockerfile support
 
 ## How we work this backlog
 - Prefer small, self-contained PRs.

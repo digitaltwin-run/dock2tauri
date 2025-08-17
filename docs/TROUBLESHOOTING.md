@@ -1,0 +1,356 @@
+# Troubleshooting Guide
+
+This guide helps resolve common issues when using Dock2Tauri.
+
+## Quick Diagnostics
+
+Run the system status check to identify potential issues:
+```bash
+make status
+```
+
+## Common Issues
+
+### 1. Build and Compilation Problems
+
+#### ❌ AppImage Build Failures
+**Symptoms:**
+- `failed to run linuxdeploy` errors
+- AppImage tools not found or not executable
+
+**Solutions:**
+```bash
+# Skip AppImage bundling (recommended for most environments)
+export DOCK2TAURI_SKIP_APPIMAGE=1
+./scripts/dock2tauri.sh <image> <host-port> <container-port> --build
+
+# OR install AppImage tools with FUSE support
+make install-deps APPIMAGE=1 YES=1
+
+# OR force AppImage in cross-compilation mode
+export DOCK2TAURI_FORCE_APPIMAGE=1
+```
+
+**Root cause:** Many CI/CD environments and containers lack FUSE support required for AppImage tools.
+
+#### ❌ Cross-compilation Failures (ARM64)
+**Symptoms:**
+- `pkg-config has not been configured to support cross-compilation`
+- GTK/GLib build errors for `aarch64-unknown-linux-gnu`
+
+**Solutions:**
+```bash
+# Install ARM64 cross-compilation toolchain
+make install-deps ARM64=1 YES=1
+
+# Setup multiarch for ARM64 dev libraries (Debian/Ubuntu)
+sudo dpkg --add-architecture arm64
+sudo apt update
+sudo apt install -y libgtk-3-dev:arm64 libglib2.0-dev:arm64 \
+  libpango1.0-dev:arm64 libcairo2-dev:arm64 libgdk-pixbuf-2.0-dev:arm64
+
+# Configure environment for ARM64 builds
+export PKG_CONFIG=aarch64-linux-gnu-pkg-config
+export PKG_CONFIG_SYSROOT_DIR=/
+export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+
+# Then build for ARM64
+./scripts/dock2tauri.sh <image> <host-port> <container-port> --build --target=aarch64-unknown-linux-gnu
+```
+
+#### ❌ macOS Cross-compilation on Linux
+**Symptoms:**
+- `cc: error: unrecognized command-line option '-arch'`
+- `objc2-exception-helper` build failures
+
+**Solutions:**
+```bash
+# Skip macOS targets (recommended)
+export DOCK2TAURI_CROSS_TARGETS="x86_64-unknown-linux-gnu"
+./scripts/dock2tauri.sh <image> <host-port> <container-port> --build --cross
+
+# OR install osxcross (advanced)
+# See: https://github.com/tpoechtrager/osxcross
+```
+
+**Root cause:** macOS cross-compilation requires Apple SDK and osxcross toolchain.
+
+#### ❌ Tauri Schema Validation Errors
+**Symptoms:**
+- Schema validation warnings
+- Invalid configuration errors
+
+**Solutions:**
+```bash
+# Check Tauri CLI version
+cargo tauri --version
+
+# Ensure Tauri v2 compatibility
+cargo install tauri-cli --version "^2.0"
+
+# Regenerate configuration
+rm -f /tmp/tauri.conf.*
+./scripts/dock2tauri.sh <image> <host-port> <container-port> --build
+```
+
+### 2. Docker-related Issues
+
+#### ❌ Docker Permission Denied
+**Symptoms:**
+- `permission denied while trying to connect to the Docker daemon socket`
+- Docker commands fail with permission errors
+
+**Solutions:**
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+
+# Re-login or activate group
+newgrp docker
+
+# Verify access
+docker ps
+```
+
+#### ❌ Port Already in Use
+**Symptoms:**
+- `bind: address already in use`
+- Port conflicts when starting containers
+
+**Solutions:**
+```bash
+# Check what's using the port
+sudo netstat -tulpn | grep :<port>
+sudo lsof -i :<port>
+
+# Stop conflicting containers
+make stop-all
+
+# Use a different port
+./scripts/dock2tauri.sh <image> <different-port> <container-port>
+```
+
+#### ❌ Container Fails to Start
+**Symptoms:**
+- Container exits immediately
+- Service not ready timeouts
+
+**Solutions:**
+```bash
+# Check container logs
+docker logs <container-name>
+
+# Debug container directly
+docker run -it --rm <image> /bin/sh
+
+# Use custom health check URL
+./scripts/dock2tauri.sh <image> <host-port> <container-port> \
+  --health-url=http://localhost:<port>/health --timeout=60
+```
+
+### 3. Package Manager Issues
+
+#### ❌ APT Repository Errors
+**Symptoms:**
+- `The repository does not have a Release file`
+- APT update failures
+
+**Solutions:**
+```bash
+# Check Ubuntu version
+cat /etc/os-release
+
+# Fix sources.list for your Ubuntu version
+sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+
+# For Ubuntu 20.04 LTS (focal)
+sudo tee /etc/apt/sources.list << EOF
+deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu focal-security main restricted universe multiverse
+EOF
+
+# Or use closest mirror
+sudo sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt/sources.list
+
+sudo apt update
+```
+
+#### ❌ Missing System Dependencies
+**Symptoms:**
+- `libgtk-3-dev` not found
+- `pkg-config` missing
+- Build tools unavailable
+
+**Solutions:**
+```bash
+# Install base dependencies
+make install-deps YES=1
+
+# Manual installation (Debian/Ubuntu)
+sudo apt update
+sudo apt install -y build-essential curl pkg-config libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev patchelf file rpm
+
+# Manual installation (Fedora/RHEL)
+sudo dnf install -y @development-tools curl pkgconf-pkg-config \
+  gtk3-devel libappindicator-gtk3 librsvg2-tools patchelf file rpm-build
+
+# Manual installation (Arch/Manjaro)
+sudo pacman -Sy --needed base-devel curl pkgconf gtk3 librsvg patchelf file rpm-tools
+```
+
+### 4. Performance Issues
+
+#### ❌ Slow Build Times
+**Symptoms:**
+- Rust compilation takes >5 minutes
+- Cross-compilation extremely slow
+
+**Solutions:**
+```bash
+# Enable parallel compilation
+export CARGO_BUILD_JOBS=$(nproc)
+
+# Use release build optimizations
+export CARGO_PROFILE_RELEASE_LTO=false
+
+# Skip unnecessary targets
+export DOCK2TAURI_CROSS_TARGETS="x86_64-unknown-linux-gnu"
+
+# Use cargo cache
+cargo install sccache
+export RUSTC_WRAPPER=sccache
+```
+
+#### ❌ Large Bundle Sizes
+**Symptoms:**
+- Bundle files >100MB
+- Slow installation/distribution
+
+**Solutions:**
+```bash
+# Strip debug symbols
+export CARGO_PROFILE_RELEASE_STRIP=true
+
+# Optimize bundle configuration
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+export CARGO_PROFILE_RELEASE_PANIC=abort
+```
+
+### 5. Runtime Issues
+
+#### ❌ WebKitGTK Warnings (Harmless)
+**Symptoms:**
+```
+Gdk-Message: Unable to load webkit2gtk-web-extension
+```
+
+**Solutions:**
+These warnings are harmless and can be ignored. They don't affect functionality.
+
+#### ❌ Application Won't Start
+**Symptoms:**
+- Desktop application crashes on startup
+- No GUI appears
+
+**Solutions:**
+```bash
+# Check system requirements
+pkg-config --modversion gtk+-3.0
+pkg-config --modversion webkit2gtk-4.0
+
+# Run in development mode for debugging
+cargo tauri dev
+
+# Check for missing libraries
+ldd ./target/release/my-tauri-app
+
+# Install missing WebKitGTK dependencies
+sudo apt install -y webkit2gtk-4.0-dev  # Debian/Ubuntu
+sudo dnf install -y webkit2gtk3-devel   # Fedora/RHEL
+```
+
+### 6. Environment-specific Issues
+
+#### ❌ GitHub Actions / CI Failures
+**Symptoms:**
+- Docker not available in CI
+- AppImage/FUSE issues in containers
+
+**Solutions:**
+```yaml
+# .github/workflows/build.yml
+- name: Set up Docker
+  uses: docker/setup-buildx-action@v2
+
+- name: Skip AppImage in CI
+  run: echo "DOCK2TAURI_SKIP_APPIMAGE=1" >> $GITHUB_ENV
+
+- name: Install dependencies
+  run: make install-deps YES=1
+```
+
+#### ❌ WSL (Windows Subsystem for Linux) Issues
+**Symptoms:**
+- Docker daemon not accessible
+- GUI applications don't display
+
+**Solutions:**
+```bash
+# Install Docker Desktop for Windows with WSL2 integration
+# OR install Docker in WSL
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+# For GUI support in WSL2
+sudo apt install -y xvfb
+export DISPLAY=:99
+Xvfb :99 -screen 0 1024x768x24 &
+```
+
+## Debug Mode
+
+Enable verbose logging for all operations:
+```bash
+export DOCK2TAURI_DEBUG=1
+./scripts/dock2tauri.sh <image> <host-port> <container-port>
+```
+
+## Getting Help
+
+1. **Check system status**: `make status`
+2. **Review logs**: Check container logs and build output
+3. **Search issues**: Look for similar problems in project issues
+4. **Create minimal reproduction**: Simplify to smallest failing case
+5. **Gather environment info**:
+   ```bash
+   # System information
+   uname -a
+   docker --version
+   cargo --version
+   cargo tauri --version
+   
+   # Dock2Tauri environment
+   echo "DOCK2TAURI_* environment variables:"
+   env | grep DOCK2TAURI
+   ```
+
+## Known Limitations
+
+- **AppImage**: Requires FUSE support (not available in many containers/CI)
+- **Cross-compilation**: Requires extensive toolchain setup
+- **macOS builds**: Limited to macOS hosts (osxcross is complex)
+- **Windows builds**: Best done on Windows hosts
+- **Container networking**: Limited to localhost by design
+
+## Reporting Issues
+
+When reporting issues, please include:
+1. Operating system and version
+2. Docker version
+3. Rust/Cargo/Tauri CLI versions
+4. Complete command that failed
+5. Full error output
+6. Output of `make status`
+7. Environment variables (sanitized)

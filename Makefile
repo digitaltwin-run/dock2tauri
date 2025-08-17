@@ -6,6 +6,15 @@ VERSION = 1.0.0
 DEFAULT_HOST_PORT = 8088
 DEFAULT_CONTAINER_PORT = 80
 
+# Install-deps configuration (override via: make install-deps APPIMAGE=1 ARM64=1 YES=1)
+APPIMAGE ?= 0
+ARM64 ?= 0
+YES ?= 0
+# Compose flags for scripts/install_deps.sh
+INSTALL_DEPS_FLAGS = $(if $(filter 1,$(APPIMAGE)),--with-appimage,) \
+                     $(if $(filter 1,$(ARM64)),--arm64,) \
+                     $(if $(filter 1,$(YES)),-y,)
+
 # Colors for output
 RED = \033[0;31m
 GREEN = \033[0;32m
@@ -13,7 +22,7 @@ YELLOW = \033[1;33m
 BLUE = \033[0;34m
 NC = \033[0m # No Color
 
-.PHONY: help install dev build clean test nginx grafana jupyter portainer launch stop-all
+.PHONY: help install install-deps install-deps-dry-run test-install dev build clean test nginx grafana jupyter portainer launch stop-all
 
 # Default target
 all: help
@@ -38,8 +47,24 @@ install: ## Install dependencies and setup project
 		echo "$(YELLOW)📦 Installing Tauri CLI...$(NC)"; \
 		cargo install tauri-cli; \
 	fi
+	@echo "$(BLUE)📦 Installing system bundling dependencies...$(NC)"
+	@bash scripts/install_deps.sh $(INSTALL_DEPS_FLAGS)
 	@chmod +x scripts/*.sh scripts/*.py scripts/*.js
 	@echo "$(GREEN)✅ Installation complete!$(NC)"
+
+install-deps: ## Install system bundling deps (APPIMAGE=1 ARM64=1 YES=1 to enable extras)
+	@echo "$(BLUE)📦 Installing system bundling dependencies...$(NC)"
+	@bash scripts/install_deps.sh $(INSTALL_DEPS_FLAGS)
+
+install-deps-dry-run: ## Dry-run of dependency installation (no changes)
+	@echo "$(BLUE)🧪 Dry-run dependency installation...$(NC)"
+	@bash scripts/install_deps.sh --dry-run $(INSTALL_DEPS_FLAGS)
+
+test-install: ## Validate install scripts (syntax + dry-run)
+	@echo "$(BLUE)🧪 Validating install scripts...$(NC)"
+	@bash -n scripts/install_deps.sh
+	@bash scripts/install_deps.sh --dry-run
+	@echo "$(GREEN)✅ Install scripts validated (syntax + dry-run)$(NC)"
 
 dev: ## Start development mode with control panel
 	@echo "$(BLUE)🚀 Starting Dock2Tauri development mode...$(NC)"

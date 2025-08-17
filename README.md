@@ -94,6 +94,88 @@ Notes:
 - AppImage bundling requires both `linuxdeploy` and `appimagetool` on PATH.
 - RPM bundling requires `rpmbuild` (Fedora: `rpm-build`; Debian/Ubuntu: `rpm`).
 
+### Installing dependencies (Makefile targets)
+
+For more granular control over system dependencies, use the new Makefile targets:
+
+```bash
+# Install system bundling dependencies only (no Rust/Tauri CLI)
+make install-deps
+
+# With AppImage tools and ARM64 cross toolchain
+make install-deps APPIMAGE=1 ARM64=1 YES=1
+
+# Dry-run (show what would be installed without changes)
+make install-deps-dry-run
+make install-deps-dry-run APPIMAGE=1 ARM64=1 YES=1
+
+# Validate install scripts (syntax check + dry-run)
+make test-install
+```
+
+Configuration flags:
+- `APPIMAGE=1` — Install `linuxdeploy` and `appimagetool` (optional, often fails without FUSE)
+- `ARM64=1` — Install ARM64 cross toolchain (`gcc-aarch64-linux-gnu`, `pkg-config-aarch64-linux-gnu`)  
+- `YES=1` — Non-interactive mode (assume yes to prompts)
+
+The install script detects your package manager (apt/dnf/yum/pacman/zypper) and installs appropriate packages for Tauri bundling on Linux:
+- Base build tools and GTK3 dev libraries
+- DEB packaging (`dpkg-deb` is usually available)
+- RPM packaging (`rpm`/`rpmbuild`)
+- Optionally: AppImage tools and ARM64 cross compiler
+
+**ARM64 cross-compilation notes:**
+After installing ARM64 toolchain, you may need ARM64 dev libraries:
+```bash
+# Debian/Ubuntu multiarch setup
+sudo dpkg --add-architecture arm64
+sudo apt update
+sudo apt install -y libgtk-3-dev:arm64 libglib2.0-dev:arm64 libpango1.0-dev:arm64 libcairo2-dev:arm64 libgdk-pixbuf-2.0-dev:arm64
+
+# Set environment for ARM64 builds
+export PKG_CONFIG=aarch64-linux-gnu-pkg-config
+export PKG_CONFIG_SYSROOT_DIR=/
+export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+```
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design, components, and data flow
+- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions  
+- **[Contributing Guide](docs/CONTRIBUTING.md)** - Development setup and contribution workflow
+- **[Roadmap](docs/ROADMAP.md)** - Long-term vision and version planning
+- **[TODO & Progress](TODO.md)** - Current tasks and priorities
+
+## 🎉 Recent Improvements (August 2025)
+
+Dock2Tauri has received major enhancements for stability and user experience:
+
+### ✅ Intelligent Cross-Compilation
+- **Smart target filtering** based on available toolchains
+- **Auto-skip AppImage** in problematic environments (override with `DOCK2TAURI_FORCE_APPIMAGE=1`)
+- **Configurable targets** via `DOCK2TAURI_CROSS_TARGETS="x,y,z"`
+- **Graceful error handling** with clear troubleshooting hints
+
+### ✅ System Dependency Management  
+- **Multi-distro installer** (`scripts/install_deps.sh`) supporting apt, dnf, yum, pacman, zypper
+- **Makefile integration** with configurable flags: `make install-deps APPIMAGE=1 ARM64=1 YES=1`
+- **ARM64 cross-compilation** toolchain setup with multiarch support
+- **Dry-run capability** for safe dependency previewing
+
+### ✅ Enhanced Build System
+- **Ephemeral Tauri config** - no more git pollution from temporary configurations
+- **Dynamic bundler detection** - automatically adapts to available packaging tools
+- **Improved error messages** with actionable solutions
+- **Better cross-platform reliability**
+
+### ✅ Professional Documentation
+- **Architecture diagrams** and component documentation
+- **Comprehensive troubleshooting** for common scenarios
+- **Development workflow** guides for contributors
+- **Long-term roadmap** with version planning
+
 ## 📋 Usage Modes
 
 Dock2Tauri supports three main run modes across all launchers:
