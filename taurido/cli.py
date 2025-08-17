@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from pathlib import Path
 from .core import Runner
 
 
@@ -17,6 +18,11 @@ def parse_args(argv=None):
     parser.add_argument("--health-url", dest="health_url", help="Override readiness URL")
     parser.add_argument("--timeout", type=int, default=30, help="Readiness timeout seconds (default: 30)")
     parser.add_argument("--cross", action="store_true", help="Attempt best-effort cross-target builds")
+    parser.add_argument(
+        "--project-root",
+        dest="project_root",
+        help="Path to Dock2Tauri project root (directory containing src-tauri/). Auto-detected if omitted.",
+    )
 
     args = parser.parse_args(argv)
 
@@ -31,7 +37,7 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    runner = Runner()
+    runner = Runner(base_dir=Path(args.project_root) if args.project_root else None)
     try:
         if args.build:
             runner.build_flow(

@@ -63,15 +63,16 @@ class Runner:
         timeout: int,
     ) -> None:
         self._check_docker()
-        image = self._build_docker_if_needed(image_or_dockerfile)
+        self._ensure_project_root(image_or_dockerfile)
+        image, dockerfile = self._build_docker_if_needed(image_or_dockerfile)
         self._launch_container(image, host_port, container_port)
         self._wait_for_service(health_url or f"http://localhost:{host_port}", timeout)
         self._generate_tauri_config(
             docker_image=image,
             host_port=host_port,
             build_release=False,
-            dockerfile_path=image_or_dockerfile if Path(image_or_dockerfile).is_file() else None,
-            docker_build_ctx=Path(image_or_dockerfile).parent if Path(image_or_dockerfile).is_file() else None,
+            dockerfile_path=dockerfile,
+            docker_build_ctx=dockerfile.parent if dockerfile else None,
         )
         self._cargo_tauri_dev()
 
@@ -86,13 +87,14 @@ class Runner:
         timeout: int,
     ) -> None:
         self._check_docker()
-        image = self._build_docker_if_needed(image_or_dockerfile)
+        self._ensure_project_root(image_or_dockerfile)
+        image, dockerfile = self._build_docker_if_needed(image_or_dockerfile)
         self._generate_tauri_config(
             docker_image=image,
             host_port=host_port,
             build_release=True,
-            dockerfile_path=image_or_dockerfile if Path(image_or_dockerfile).is_file() else None,
-            docker_build_ctx=Path(image_or_dockerfile).parent if Path(image_or_dockerfile).is_file() else None,
+            dockerfile_path=dockerfile,
+            docker_build_ctx=dockerfile.parent if dockerfile else None,
         )
         self.export_dir.mkdir(parents=True, exist_ok=True)
         # If explicit target provided, build only that
@@ -144,18 +146,25 @@ class Runner:
             raise SystemExit(1)
         log_success("Dependencies check passed")
 
-    def _build_docker_if_needed(self, image_or_dockerfile: str) -> str:
+    def _build_docker_if_needed(self, image_or_dockerfile: str) -> tuple[str, Optional[Path]]:
         p = Path(image_or_dockerfile)
+        dockerfile: Optional[Path] = None
+        # Resolve relative to CWD first, then project root if not found
         if p.is_file():
             dockerfile = p
-            ctx = p.parent
-            tag_base = re.sub(r"[^a-z0-9_.-]", "-", p.name.lower())
+        elif not p.is_absolute():
+            candidate = (self.base_dir / p)
+            if candidate.is_file():
+                dockerfile = candidate
+        if dockerfile is not None:
+            ctx = dockerfile.parent
+            tag_base = re.sub(r"[^a-z0-9_.-]", "-", dockerfile.name.lower())
             tag = f"dock2tauri-local-{tag_base}-{int(time.time())}"
             log_info(f"Building Docker image from {dockerfile} (context: {ctx}) as {tag} ...")
             cmd = ["docker", "build", "-f", str(dockerfile), "-t", tag, str(ctx)]
             self._run(cmd)
-            return tag
-        return image_or_dockerfile
+            return tag, dockerfile
+        return image_or_dockerfile, None
 
     def _launch_container(self, image: str, host_port: str, container_port: str) -> None:
         safe_name = re.sub(r"[^a-zA-Z0-9]", "-", image)
@@ -293,6 +302,50 @@ class Runner:
         with open(self.tauri_config_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
         log_success(f"Ephemeral Tauri configuration prepared at {self.tauri_config_path}")
+
+    # --- project root detection ---
+    def _ensure_project_root(self, image_or_dockerfile: str) -> None:
+        """Ensure self.base_dir points to a directory containing src-tauri/.
+
+        Resolution order:
+        1) TAURIDO_PROJECT_ROOT env var
+        2) Provided self.base_dir if it has src-tauri
+        3) Current working directory if it has src-tauri
+        4) Sibling ../dock2tauri if it has src-tauri (common layout)
+        5) Parent-walk from Dockerfile path (if it exists) to find src-tauri
+        Fallback: keep current and error later if not found.
+        """
+        # 1) Env var
+        env_root = os.environ.get("TAURIDO_PROJECT_ROOT")
+        candidates = []
+        if env_root:
+            candidates.append(Path(env_root))
+        # 2) Provided base_dir
+        candidates.append(self.base_dir)
+        # 3) CWD
+        candidates.append(Path.cwd())
+        # 4) Sibling ../dock2tauri
+        candidates.append(Path.cwd().parent / "dock2tauri")
+        # 5) Parent-walk from Dockerfile path
+        p = Path(image_or_dockerfile)
+        try:
+            if p.is_file():
+                for parent in [p.parent] + list(p.parents):
+                    candidates.append(parent)
+        except Exception:
+            pass
+
+        for c in candidates:
+            try:
+                if (c / "src-tauri").is_dir():
+                    # Update internal paths
+                    self.base_dir = c
+                    self.src_tauri = c / "src-tauri"
+                    self.export_dir = c / "dist"
+                    return
+            except Exception:
+                continue
+        # No change if not found; subsequent steps will fail with clear message when accessing src-tauri
 
     def _appimage_tools_runnable(self) -> bool:
         env = os.environ.copy()
