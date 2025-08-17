@@ -25,13 +25,16 @@ From the Dock2Tauri repo root (the directory that contains `src-tauri/`):
 taurido ./examples/pwa-hello/Dockerfile 8088 80
 ```
 
-From the taurido repo (or any other directory), you can either rely on auto-detection or point to the project root explicitly:
+From any directory, you can run taurido with different project configurations:
 
 ```bash
-# Explicit project root
+# Use current taurido project and export to local bundle folder
+taurido --export-dir ./bundle ./examples/pwa-hello/Dockerfile 8088 80
+
+# Use external Dock2Tauri project
 taurido --project-root ../dock2tauri ./examples/pwa-hello/Dockerfile 8088 80
 
-# Or via env var
+# Via environment variable
 TAURIDO_PROJECT_ROOT=../dock2tauri taurido ./examples/pwa-hello/Dockerfile 8088 80
 ```
 
@@ -57,12 +60,12 @@ make clean         # Remove virtual environment and build artifacts
 ### Example Usage
 ```bash
 make run-example   # Build example from ../dock2tauri/examples/pwa-hello/
+make build-local   # Build example and export bundles to ./bundle/
 ```
 
-The `run-example` target:
-- Assumes the Dock2Tauri repository is located at `../dock2tauri`
-- Builds the pwa-hello example Dockerfile
-- Exports DEB, RPM, and AppImage bundles to `../dock2tauri/dist/`
+**Target descriptions:**
+- `run-example`: Assumes the Dock2Tauri repository is located at `../dock2tauri`, builds the pwa-hello example Dockerfile, and exports bundles to `../dock2tauri/dist/`
+- `build-local`: Same as `run-example` but exports bundles locally to `./bundle/` directory in the taurido repository
 
 Options are aligned with the Bash launcher:
 
@@ -72,6 +75,7 @@ Options are aligned with the Bash launcher:
 - `--timeout=<seconds>`
 - `--cross` (best-effort, requires proper toolchains)
 - `--project-root <path>` (directory containing `src-tauri/`; auto-detected if omitted)
+- `--export-dir <path>` (custom directory to export bundles; default: project-root/dist)
 
 Environment toggles:
 
