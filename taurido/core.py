@@ -263,7 +263,7 @@ class Runner:
 
         cfg = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-            "productName": f"Dock2Tauri - {re.sub(r'[/:*?\"<>|]', '', docker_image.split(':')[0])}",
+            "productName": f"Dock2Tauri-{re.sub(r'[/:*?\"<>|]', '', docker_image.split(':')[0])}",
             "version": "1.0.0",
             "identifier": f"com.dock2tauri.{re.sub(r'[^a-zA-Z0-9]', '', docker_image)}",
             "build": {
@@ -276,7 +276,7 @@ class Runner:
                 "security": {"csp": None},
                 "windows": [
                     {
-                        "title": f"Dock2Tauri - {docker_image}",
+                        "title": f"Dock2Tauri-{docker_image}",
                         "width": 1200,
                         "height": 800,
                         "minWidth": 600,

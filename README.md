@@ -35,12 +35,34 @@ taurido --project-root ../dock2tauri ./examples/pwa-hello/Dockerfile 8088 80
 TAURIDO_PROJECT_ROOT=../dock2tauri taurido ./examples/pwa-hello/Dockerfile 8088 80
 ```
 
-Makefile convenience targets (in this repository):
+## Development Commands
 
+This repository includes a Makefile with convenient development targets:
+
+### Setup Commands
 ```bash
-make dev-install   # editable install with dev deps
-make run-example   # runs example build against ../dock2tauri
+make venv          # Create Python virtual environment (.venv)
+make install       # Install taurido in editable mode
+make dev-install   # Install taurido with development dependencies (pytest, ruff, build)
 ```
+
+### Development Workflow
+```bash
+make test          # Run test suite with pytest
+make lint          # Run code linting with ruff
+make build         # Build distribution packages
+make clean         # Remove virtual environment and build artifacts
+```
+
+### Example Usage
+```bash
+make run-example   # Build example from ../dock2tauri/examples/pwa-hello/
+```
+
+The `run-example` target:
+- Assumes the Dock2Tauri repository is located at `../dock2tauri`
+- Builds the pwa-hello example Dockerfile
+- Exports DEB, RPM, and AppImage bundles to `../dock2tauri/dist/`
 
 Options are aligned with the Bash launcher:
 
