@@ -34,8 +34,125 @@ Dock2Tauri is a lightweight bridge that allows you to run any Docker container a
 git clone https://github.com/digitaltwin-run/dock2tauri.git
 cd dock2tauri
 make install
+./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8088 80 --build
 ```
 
+```bash
+Cloning into 'dock2tauri'...
+remote: Enumerating objects: 355, done.
+remote: Counting objects: 100% (355/355), done.
+remote: Compressing objects: 100% (248/248), done.
+remote: Total 355 (delta 170), reused 281 (delta 96), pack-reused 0 (from 0)
+Receiving objects: 100% (355/355), 628.14 KiB | 1.86 MiB/s, done.
+Resolving deltas: 100% (170/170), done.
+\033[0;34m🔧 Installing Dock2Tauri...\033[0m 
+\033[1;33m⚠️  Rust not found. Installing...\033[0m 
+info: downloading installer
+info: profile set to 'default'
+info: default host triple is x86_64-unknown-linux-gnu
+info: syncing channel updates for 'stable-x86_64-unknown-linux-gnu'
+927.4 KiB / 927.4 KiB (100 %) 866.4 KiB/s in  1s         
+info: latest update on 2025-08-07, rust version 1.89.0 (29483883e 2025-08-04)
+info: downloading component 'cargo'
+  9.7 MiB /   9.7 MiB (100 %) 417.0 KiB/s in 16s         
+info: downloading component 'clippy'
+  4.3 MiB /   4.3 MiB (100 %) 381.6 KiB/s in 13s         
+info: downloading component 'rust-docs'
+ 20.2 MiB /  20.2 MiB (100 %) 559.4 KiB/s in 52s         
+info: downloading component 'rust-std'
+ 27.6 MiB /  27.6 MiB (100 %) 374.4 KiB/s in  1m  8s         
+info: downloading component 'rustc'
+ 78.1 MiB /  78.1 MiB (100 %) 289.2 KiB/s in  3m 51s             
+info: downloading component 'rustfmt'
+  2.2 MiB /   2.2 MiB (100 %)   1.8 MiB/s in  1s         
+info: installing component 'cargo'
+info: installing component 'clippy'
+info: installing component 'rust-docs'
+ 20.2 MiB /  20.2 MiB (100 %)   4.5 MiB/s in  3s         
+info: installing component 'rust-std'
+ 27.6 MiB /  27.6 MiB (100 %)  19.6 MiB/s in  1s         
+info: installing component 'rustc'
+ 78.1 MiB /  78.1 MiB (100 %)  21.5 MiB/s in  3s         
+info: installing component 'rustfmt'
+info: default toolchain set to 'stable-x86_64-unknown-linux-gnu'
+
+  stable-x86_64-unknown-linux-gnu installed - rustc 1.89.0 (29483883e 2025-08-04)
+
+
+Rust is installed now. Great!
+
+To get started you may need to restart your current shell.
+This would reload your PATH environment variable to include
+Cargo's bin directory ($HOME/.cargo/bin).
+
+To configure your current shell, you need to source
+the corresponding env file under $HOME/.cargo.
+
+This is usually done by running one of the following (note the leading DOT):
+. "$HOME/.cargo/env"            # For sh/bash/zsh/ash/dash/pdksh
+source "$HOME/.cargo/env.fish"  # For fish
+source $"($nu.home-path)/.cargo/env.nu"  # For nushell
+\033[1;33m📦 Installing Tauri CLI...\033[0m 
+/bin/sh: line 3: cargo: command not found
+make: *** [Makefile:39: install] Error 127
+ℹ️  Building Docker image from ./examples/pwa-notes/Dockerfile (context: ./examples/pwa-notes) as dock2tauri-local-dockerfile-1755456008 ...
+[+] Building 12.4s (8/8) FINISHED                                                                                     docker:default
+ => [internal] load build definition from Dockerfile                                                                            0.0s
+ => => transferring dockerfile: 264B                                                                                            0.0s
+ => [internal] load metadata for docker.io/library/nginx:alpine                                                                 2.3s
+ => [internal] load .dockerignore                                                                                               0.0s
+ => => transferring context: 2B                                                                                                 0.0s
+ => [1/3] FROM docker.io/library/nginx:alpine@sha256:2459838ed006e699c252db374550c91490068bbf3b35fa8b9d29bfe0e31b8b95           9.7s
+ => => resolve docker.io/library/nginx:alpine@sha256:2459838ed006e699c252db374550c91490068bbf3b35fa8b9d29bfe0e31b8b95           0.0s
+ => => sha256:2459838ed006e699c252db374550c91490068bbf3b35fa8b9d29bfe0e31b8b95 10.33kB / 10.33kB                                0.0s
+ => => sha256:60e48a050b6408d0c5dd59b98b6e36bf0937a0bbe99304e3e9c0e63b7563443a 2.50kB / 2.50kB                                  0.0s
+ => => sha256:6bc572a340ecbc60aca0c624f76b32de0b073d5efa4fa1e0b6d9da6405976946 1.81MB / 1.81MB                                  2.0s
+ => => sha256:403e3f251637881bbdc5fb06df8da55c149c00ccb0addbcb7839fa4ad60dfd04 628B / 628B                                      0.4s
+ => => sha256:4a86014ec6994761b7f3118cf47e4b4fd6bac15fc6fa262c4f356386bbc0e9d9 10.78kB / 10.78kB                                0.0s
+ => => sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 3.80MB / 3.80MB                                  3.1s
+ => => sha256:9adfbae99cb79774fdc14ca03a0a0154b8c199a69f69316bcfce64b07f80719f 955B / 955B                                      1.0s
+ => => sha256:7a8a46741e18ed98437271669138116163f14596f411c1948fd7836e39f1afea 405B / 405B                                      1.4s
+ => => sha256:c9ebe2ff2d2cd981811cefb6df49a116da6074c770c07ee86a6ae2ebe7eee926 1.21kB / 1.21kB                                  1.8s
+ => => sha256:a992fbc61ecc9d8291c27f9add7b8a07d374c06a435d4734519b634762cf1c51 1.40kB / 1.40kB                                  2.2s
+ => => sha256:cb1ff4086f82493a4b8b02ec71bfed092cad25bd5bf302aec78d4979895350cb 16.84MB / 16.84MB                                9.3s
+ => => extracting sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8                                       0.4s
+ => => extracting sha256:6bc572a340ecbc60aca0c624f76b32de0b073d5efa4fa1e0b6d9da6405976946                                       0.0s
+ => => extracting sha256:403e3f251637881bbdc5fb06df8da55c149c00ccb0addbcb7839fa4ad60dfd04                                       0.0s
+ => => extracting sha256:9adfbae99cb79774fdc14ca03a0a0154b8c199a69f69316bcfce64b07f80719f                                       0.0s
+ => => extracting sha256:7a8a46741e18ed98437271669138116163f14596f411c1948fd7836e39f1afea                                       0.0s
+ => => extracting sha256:c9ebe2ff2d2cd981811cefb6df49a116da6074c770c07ee86a6ae2ebe7eee926                                       0.0s
+ => => extracting sha256:a992fbc61ecc9d8291c27f9add7b8a07d374c06a435d4734519b634762cf1c51                                       0.0s
+ => => extracting sha256:cb1ff4086f82493a4b8b02ec71bfed092cad25bd5bf302aec78d4979895350cb                                       0.2s
+ => [internal] load build context                                                                                               0.0s
+ => => transferring context: 3.01kB                                                                                             0.0s
+ => [2/3] RUN rm -rf /usr/share/nginx/html/*                                                                                    0.2s
+ => [3/3] COPY app /usr/share/nginx/html                                                                                        0.0s
+ => exporting to image                                                                                                          0.0s
+ => => exporting layers                                                                                                         0.0s
+ => => writing image sha256:373e206df2a793df17d81f3418a59a5bc5edb1c80559b5055e1eccb43f191b19                                    0.0s
+ => => naming to docker.io/library/dock2tauri-local-dockerfile-1755456008                                                       0.0s
+🐳🦀 Dock2Tauri - Docker to Desktop Bridge
+==================================================
+ℹ️  Checking dependencies...
+⚠️  Rust/Cargo not found. Some features may not work.
+✅ Dependencies check passed
+ℹ️  Preparing Tauri configuration (ephemeral)...
+⚠️  rpmbuild not found; skipping RPM bundle.
+⚠️  linuxdeploy/appimagetool not found; skipping AppImage bundle.
+✅ Ephemeral Tauri configuration prepared at /tmp/tauri.conf.G6Bnui.json
+ℹ️  Building Tauri release bundles (multi-target export)...
+ℹ️  Checking for existing dock2tauri RPM packages...
+ℹ️  No existing dock2tauri packages found
+ℹ️  Building bundles for target: native ...
+./scripts/dock2tauri.sh: line 465: cargo: command not found
+⚠️  Build failed for native target; exporting any bundles produced before failure.
+⚠️  No bundles found at ./dock2tauri/src-tauri/target/release/bundle
+ℹ️  Cross-target builds disabled by default. Use --cross to attempt them.
+✅ All available bundles exported to: /dock2tauri/dist
+ℹ️  Cleaning up...
+✅ Removed ephemeral Tauri config
+```
+      
 ![img.png](img.png)
 
 ### Automated installer (scripts/install.sh)
