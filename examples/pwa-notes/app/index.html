@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#a855f7" />
+  <title>Dock2Tauri PWA - Notes</title>
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:#120a1a;color:#e5e7eb}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{max-width:900px;width:100%;background:#1b0f2a;border:1px solid #2b1640;border-radius:12px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+    h1{margin:0 0 8px;font-size:28px;color:#d8b4fe}
+    p{margin:8px 0 0;color:#cbd5e1}
+    .row{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    textarea{width:100%;min-height:260px;background:#120a1a;color:#f1f5f9;border:1px solid #2b1640;border-radius:8px;padding:12px;resize:vertical}
+    .bar{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+    button{background:#a855f7;color:#170a24;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+    .muted{opacity:.7}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Dock2Tauri PWA — Notes</h1>
+      <p>Single-file PWA notes with localStorage and offline cache (best-effort).</p>
+      <div class="row"><textarea id="notes" placeholder="Type your notes here..."></textarea></div>
+      <div class="bar"><button id="save">Save</button><button id="clear">Clear</button></div>
+      <p class="muted">Notes are stored locally in your browser.</p>
+    </div>
+  </div>
+  <script>
+    const key='pwa-notes:data';
+    const elNotes=document.getElementById('notes');
+    document.getElementById('save').onclick=()=>{ localStorage.setItem(key, elNotes.value||''); };
+    document.getElementById('clear').onclick=()=>{ elNotes.value=''; localStorage.removeItem(key); };
+    elNotes.value = localStorage.getItem(key)||'';
+
+    (function registerSW(){
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        const swCode = `const CACHE='pwa-notes-v1';
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/','/index.html']).catch(()=>{})))});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{const copy=resp.clone();if(e.request.method==='GET'&&resp.ok){caches.open(CACHE).then(c=>c.put(e.request,copy)).catch(()=>{});}return resp;}).catch(()=>caches.match('/index.html'))))});`;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const url = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(url).catch(()=>{});
+      } catch(e) { /* noop */ }
+    })();
+  </script>
+</body>
+</html>
