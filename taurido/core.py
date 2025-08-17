@@ -38,10 +38,10 @@ def log_error(msg: str) -> None:
 
 
 class Runner:
-    def __init__(self, base_dir: Optional[Path] = None) -> None:
+    def __init__(self, base_dir: Optional[Path] = None, export_dir: Optional[Path] = None) -> None:
         self.base_dir = Path(base_dir) if base_dir else Path.cwd()
         self.src_tauri = self.base_dir / "src-tauri"
-        self.export_dir = self.base_dir / "dist"
+        self.export_dir = Path(export_dir) if export_dir else self.base_dir / "dist"
         self.tauri_config_path: Optional[Path] = None
         self.container_name: Optional[str] = None
         # Candidate cross targets
@@ -339,9 +339,12 @@ class Runner:
             try:
                 if (c / "src-tauri").is_dir():
                     # Update internal paths
+                    old_export_dir = self.export_dir
                     self.base_dir = c
                     self.src_tauri = c / "src-tauri"
-                    self.export_dir = c / "dist"
+                    # Only update export_dir if it wasn't explicitly set
+                    if old_export_dir == self.base_dir / "dist":
+                        self.export_dir = c / "dist"
                     return
             except Exception:
                 continue

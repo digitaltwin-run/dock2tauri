@@ -6,7 +6,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 TAURIDO := $(VENV)/bin/taurido
 
-.PHONY: venv install dev-install test lint build clean run-example
+.PHONY: venv install dev-install test lint build clean run-example build-local
 
 venv:
 	@test -x "$(VENV)/bin/python" || $(PYTHON) -m venv $(VENV)
@@ -32,3 +32,7 @@ clean:
 # Run example from the Dock2Tauri repo root
 run-example: dev-install
 	cd ../dock2tauri && $(abspath $(TAURIDO)) ./examples/pwa-hello/Dockerfile 8088 80
+
+# Build bundles locally in ./bundle/ directory
+build-local: dev-install
+	cd ../dock2tauri && $(abspath $(TAURIDO)) --export-dir $(abspath bundle) ./examples/pwa-hello/Dockerfile 8088 80

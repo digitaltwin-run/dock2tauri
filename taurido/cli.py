@@ -23,6 +23,11 @@ def parse_args(argv=None):
         dest="project_root",
         help="Path to Dock2Tauri project root (directory containing src-tauri/). Auto-detected if omitted.",
     )
+    parser.add_argument(
+        "--export-dir",
+        dest="export_dir",
+        help="Custom directory to export bundles (default: project-root/dist).",
+    )
 
     args = parser.parse_args(argv)
 
@@ -37,7 +42,10 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    runner = Runner(base_dir=Path(args.project_root) if args.project_root else None)
+    runner = Runner(
+        base_dir=Path(args.project_root) if args.project_root else None,
+        export_dir=Path(args.export_dir) if args.export_dir else None
+    )
     try:
         if args.build:
             runner.build_flow(
