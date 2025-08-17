@@ -9,7 +9,7 @@ TAURIDO := $(VENV)/bin/taurido
 .PHONY: venv install dev-install test lint build clean run-example
 
 venv:
-	$(PYTHON) -m venv $(VENV)
+	@test -x "$(VENV)/bin/python" || $(PYTHON) -m venv $(VENV)
 
 install: venv
 	$(PIP) install -e .
@@ -31,4 +31,4 @@ clean:
 
 # Run example from the Dock2Tauri repo root
 run-example: dev-install
-	cd ../dock2tauri && $(TAURIDO) ./examples/pwa-hello/Dockerfile 8088 80
+	cd ../dock2tauri && $(abspath $(TAURIDO)) ./examples/pwa-hello/Dockerfile 8088 80
