@@ -643,6 +643,9 @@ build_android_best_effort() {
 install_and_run_rpm() {
   log_info "Checking for built RPM packages..."
   
+  # First, cleanup any existing conflicting packages
+  cleanup_existing_rpm_packages
+  
   local rpm_dir="$BASE_DIR/src-tauri/target/release/bundle/rpm"
   if [ ! -d "$rpm_dir" ]; then
     log_warning "No RPM directory found at $rpm_dir"
