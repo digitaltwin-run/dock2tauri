@@ -66,7 +66,11 @@ test-install: ## Validate install scripts (syntax + dry-run)
 	@bash scripts/install_deps.sh --dry-run
 	@echo "$(GREEN)✅ Install scripts validated (syntax + dry-run)$(NC)"
 
-dev: ## Start development mode with control panel
+kill-port: ## Kill any process using port 8081
+	@echo "$(BLUE)🧹 Cleaning port 8081...$(NC)"
+	@lsof -ti:8081 | xargs kill -9 2>/dev/null || echo "$(GREEN)✅ Port 8081 is free$(NC)"
+
+dev: kill-port ## Start development mode with control panel
 	@echo "$(BLUE)🚀 Starting Dock2Tauri development mode...$(NC)"
 	@cd src-tauri && cargo tauri dev
 
