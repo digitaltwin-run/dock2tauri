@@ -44,6 +44,9 @@ set -e
 # Base directory of the project
 BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
+# Load environment configuration
+load_env_config
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
