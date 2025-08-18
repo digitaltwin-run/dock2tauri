@@ -388,10 +388,20 @@ generate_tauri_config_json() {
       if $first; then BUNDLE_TARGETS_JSON+="\"$t\""; first=false; else BUNDLE_TARGETS_JSON+=", \"$t\""; fi
     done
     BUNDLE_TARGETS_JSON+="]"
+    
+    # Determine product name: use CUSTOM_APP_NAME if set, otherwise auto-generate
+    local PRODUCT_NAME
+    if [ -n "$CUSTOM_APP_NAME" ]; then
+      PRODUCT_NAME="$CUSTOM_APP_NAME"
+      log_info "Using custom app name: $PRODUCT_NAME"
+    else
+      PRODUCT_NAME="Dock2Tauri-$(echo $DOCKER_IMAGE | cut -d':' -f1 | sed 's|[/\:*?"<>|]||g')"
+    fi
+    
     cat > "$TAURI_CONFIG_PATH" << EOF
 {
   "\$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "Dock2Tauri-$(echo $DOCKER_IMAGE | cut -d':' -f1 | sed 's|[/\:*?"<>|]||g')",
+  "productName": "$PRODUCT_NAME",
   "version": "1.0.0",
   "identifier": "com.dock2tauri.$(echo $DOCKER_IMAGE | sed 's/[^a-zA-Z0-9]//g')",
   "build": {
@@ -665,8 +675,49 @@ build_and_export() {
   build_android_best_effort || true
   log_success "All available bundles exported to: $EXPORT_DIR"
   
+  # Copy to additional output directories if specified
+  copy_to_additional_dirs
+  
   # Offer to install and run RPM package if built successfully
   install_and_run_rpm
+}
+
+# Copy built artifacts to additional output directories
+copy_to_additional_dirs() {
+  if [ -z "$ADDITIONAL_OUTPUT_DIRS" ]; then
+    return 0
+  fi
+  
+  log_info "Copying built artifacts to additional directories..."
+  
+  # Parse comma-separated directories
+  IFS=',' read -ra DIRS <<< "$ADDITIONAL_OUTPUT_DIRS"
+  
+  for dir in "${DIRS[@]}"; do
+    # Trim whitespace
+    dir="$(echo "$dir" | xargs)"
+    
+    if [ -z "$dir" ]; then
+      continue
+    fi
+    
+    log_info "  Copying to: $dir"
+    
+    # Create directory if it doesn't exist
+    if ! mkdir -p "$dir" 2>/dev/null; then
+      log_warning "  ❌ Failed to create directory: $dir"
+      continue
+    fi
+    
+    # Copy all contents from EXPORT_DIR to additional directory
+    if cp -rf "$EXPORT_DIR"/* "$dir/" 2>/dev/null; then
+      log_success "  ✅ Copied to: $dir"
+    else
+      log_warning "  ⚠️  Partial copy to: $dir (some files may have failed)"
+    fi
+  done
+  
+  log_success "Additional directory copying completed"
 }
 
 # Generate root dist/README.md listing built platforms
