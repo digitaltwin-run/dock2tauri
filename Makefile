@@ -137,6 +137,20 @@ test-clean: ## Clean test outputs and dependencies
 	@find tests/ -name "*.log" -delete
 	@echo "$(GREEN)✅ Test outputs cleaned$(NC)"
 
+test-docker-build: ## Build Docker test environment
+	@echo "$(BLUE)🐳 Building Docker test environment...$(NC)"
+	@docker build -f Dockerfile.test -t dock2tauri-test .
+	@echo "$(GREEN)✅ Docker test environment built$(NC)"
+
+test-docker: test-docker-build ## Run all tests in Docker isolation
+	@echo "$(BLUE)🐳 Running tests in Docker isolation...$(NC)"
+	@docker run --rm dock2tauri-test
+	@echo "$(GREEN)✅ Docker tests completed$(NC)"
+
+test-docker-shell: test-docker-build ## Open interactive shell in Docker test environment
+	@echo "$(BLUE)🐳 Opening Docker test shell...$(NC)"
+	@docker run --rm -it dock2tauri-test bash
+
 # Quick launch presets
 nginx: ## Launch Nginx web server (port 8088)
 	@echo "$(GREEN)🌐 Launching Nginx as desktop app...$(NC)"
