@@ -399,6 +399,82 @@ export DOCK2TAURI_DEBUG=1
 ./scripts/dock2tauri.sh <image> <host-port> <container-port>
 ```
 
+### 7. Custom Build Paths Configuration Issues
+
+#### ❌ Custom Output Directory Not Working
+**Symptoms:**
+- Files still exported to default `./dist` directory
+- Custom `--output-dir` argument ignored
+
+**Solutions:**
+```bash
+# Ensure proper argument syntax (use = sign)
+./scripts/dock2tauri.sh --output-dir="/path/to/builds" nginx:alpine 8088 80 --build
+
+# Check resolved export path in logs
+# Should show: "Resolved export path: /path/to/builds"
+
+# Verify directory permissions
+mkdir -p "/path/to/builds" && ls -la "/path/to/builds"
+```
+
+#### ❌ Additional Output Directories Copy Failures
+**Symptoms:**
+- `⚠️ Partial copy to: /dir` warnings
+- `❌ Failed to create directory` errors
+
+**Solutions:**
+```bash
+# Check directory permissions and create manually
+sudo mkdir -p /target/directory
+sudo chown $USER:$USER /target/directory
+
+# Use comma-separated paths without spaces
+--copy-to="/home/user/apps,/opt/deployments"
+
+# Verify paths exist and are writable
+ls -la /target/parent/directory
+```
+
+#### ❌ Custom App Name Not Applied
+**Symptoms:**
+- Package names still use auto-generated names
+- `productName` not updated in tauri.conf.json
+
+**Solutions:**
+```bash
+# Verify custom app name parsing in logs
+# Should show: "Using custom app name: MyApp"
+
+# Check .env configuration
+cat .env | grep CUSTOM_APP_NAME
+
+# Ensure no special characters in app name
+--app-name="MyCleanAppName"  # Good
+--app-name="My/App:Name"     # Problematic
+```
+
+#### ❌ Environment Configuration Issues
+**Symptoms:**
+- `.env` file not loaded
+- Default values not applied
+
+**Solutions:**
+```bash
+# Verify .env file exists and is readable
+ls -la .env
+cat .env
+
+# Recreate from example if corrupted
+cp .env.example .env
+
+# Check environment loading in logs
+# Should show: "✅ Configuration loaded from .env"
+
+# Manual verification
+source .env && echo $OUTPUT_DIR
+```
+
 ## Getting Help
 
 1. **Check system status**: `make status`

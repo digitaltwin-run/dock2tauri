@@ -20,6 +20,12 @@ This roadmap outlines the planned evolution of Dock2Tauri from its current state
 - ✅ System dependency installer with platform detection
 - ✅ Enhanced error handling and user messaging
 - ✅ Architecture documentation and contributing guidelines
+- ✅ **Custom Build Paths System** - Complete flexibility for build workflows
+  - Custom output directories with `--output-dir`
+  - Custom app names with `--app-name` integrated in tauri.conf.json
+  - Multi-location deployment with `--copy-to`
+  - Advanced CLI argument parsing with filtered processing
+  - Environment configuration system with .env support
 
 ## Version 1.1 - Stability & Polish (Q3 2025) 🔄
 
