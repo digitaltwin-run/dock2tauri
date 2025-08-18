@@ -69,6 +69,36 @@ Multiple entry points providing unified CLI across different environments:
 - `DOCK2TAURI_CROSS_TARGETS="x,y,z"` - Override cross-compilation targets
 - `DOCK2TAURI_DEBUG=1` - Enable debug mode
 
+#### Custom Build Paths System (v1.0.x+)
+**Advanced Configuration Architecture** providing complete flexibility for build workflows:
+
+```
+┌─────────────────┐    ┌──────────────────────┐    ┌─────────────────┐
+│  CLI Arguments  │───▶│  Argument Processor   │───▶│  Build System   │
+│                 │    │                      │    │                 │
+│ --output-dir=   │    │ • parse_custom_opts() │    │ • EXPORT_DIR    │
+│ --app-name=     │    │ • FILTERED_ARGS       │    │ • tauri config  │
+│ --filename=     │    │ • Environment sync    │    │ • Bundle naming │
+│ --copy-to=      │    │ • Path resolution     │    │ • Multi-copy    │
+└─────────────────┘    └──────────────────────┘    └─────────────────┘
+```
+
+**Configuration Flow:**
+1. **Environment Loading** (`.env` → defaults)
+2. **CLI Argument Parsing** (custom options extraction)
+3. **Configuration Merge** (CLI overrides environment)
+4. **Path Resolution** (absolute/relative path handling)
+5. **Tauri Config Generation** (dynamic productName injection)
+6. **Build Execution** (custom paths applied)
+7. **Multi-Location Distribution** (optional copying)
+
+**Key Features:**
+- **Environment Integration**: `.env.example` → `.env` automatic setup
+- **Advanced Parsing**: FILTERED_ARGS approach for clean separation
+- **Dynamic Configuration**: Runtime tauri.conf.json modification
+- **Path Flexibility**: Absolute/relative output directory support
+- **Multi-Deployment**: Comma-separated copy destinations
+
 ### 3. Tauri Desktop Application
 
 #### Core Architecture
