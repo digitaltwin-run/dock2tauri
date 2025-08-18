@@ -38,11 +38,12 @@ def log_error(msg: str) -> None:
 
 
 class Runner:
-    def __init__(self, base_dir: Optional[Path] = None, export_dir: Optional[Path] = None, launch_after_build: bool = False) -> None:
+    def __init__(self, base_dir: Optional[Path] = None, export_dir: Optional[Path] = None, launch_after_build: bool = False, list_bundles: bool = False) -> None:
         self.base_dir = Path(base_dir) if base_dir else Path.cwd()
         self.src_tauri = self.base_dir / "src-tauri"
         self.export_dir = Path(export_dir) if export_dir else self.base_dir / "dist"
         self.launch_after_build = launch_after_build
+        self.list_bundles = list_bundles
         self.tauri_config_path: Optional[Path] = None
         self.container_name: Optional[str] = None
         # Candidate cross targets
@@ -119,6 +120,10 @@ class Runner:
         self._generate_dist_root_readme()
         log_success(f"All available bundles exported to: {self.export_dir}")
         
+        # List bundle contents if requested
+        if self.list_bundles:
+            self._list_bundle_contents()
+            
         # Launch application if requested
         if self.launch_after_build:
             self._launch_application()
