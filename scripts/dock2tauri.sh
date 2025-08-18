@@ -1,7 +1,17 @@
 #!/bin/bash
 
 # Dock2Tauri Bash Launcher
-# Usage: ./dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>] [--health-url=<url>] [--timeout=<seconds>] [--cross]
+# Usage: ./dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [OPTIONS]
+# OPTIONS:
+#   --build (-b)                Build Tauri release bundles instead of running dev
+#   --target=<triple>           Pass target triple to cargo tauri build
+#   --health-url=<url>          Override readiness URL (default: http://localhost:HOST_PORT)
+#   --timeout=<seconds>         Readiness timeout in seconds (default: 30)
+#   --cross                     Attempt best-effort cross-target builds
+#   --output-dir=<path>         Custom output directory for binaries (default: ./dist)
+#   --app-name=<name>           Custom application name (overrides auto-generated)
+#   --filename=<prefix>         Custom filename prefix for packages
+#   --copy-to=<paths>           Additional directories to copy binaries (comma-separated)
 
 # Load environment configuration
 load_env_config() {
@@ -32,6 +42,12 @@ load_env_config() {
   export DEV_PORT="${DEV_PORT:-8081}"
   export APP_NAME="${APP_NAME:-Dock2Tauri}"
   export RPM_FORCE_INSTALL="${RPM_FORCE_INSTALL:-true}"
+  
+  # Output and naming customization defaults
+  export OUTPUT_DIR="${OUTPUT_DIR:-./dist}"
+  export CUSTOM_APP_NAME="${CUSTOM_APP_NAME:-}"
+  export CUSTOM_FILENAME="${CUSTOM_FILENAME:-}"
+  export ADDITIONAL_OUTPUT_DIRS="${ADDITIONAL_OUTPUT_DIRS:-}"
 }
 #   --build (-b)        Build Tauri release bundles instead of running `tauri dev`
 #   --target=<triple>   Pass target triple to `cargo tauri build`, e.g. --target=x86_64-pc-windows-gnu
@@ -860,7 +876,59 @@ show_help() {
     echo "  DOCK2TAURI_DEBUG=1    Enable debug mode"
 }
 
-# Parse arguments
+# Parse arguments (advanced parsing for custom options)
+parse_custom_options() {
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --output-dir=*)
+        OUTPUT_DIR="${1#*=}"
+        shift
+        ;;
+      --app-name=*)
+        CUSTOM_APP_NAME="${1#*=}"
+        shift
+        ;;
+      --filename=*)
+        CUSTOM_FILENAME="${1#*=}"
+        shift
+        ;;
+      --copy-to=*)
+        ADDITIONAL_OUTPUT_DIRS="${1#*=}"
+        shift
+        ;;
+      -h|--help)
+        show_help
+        exit 0
+        ;;
+      *)
+        # Not a custom option, keep it for main parsing
+        break
+        ;;
+    esac
+  done
+  
+  # Export the updated variables
+  export OUTPUT_DIR CUSTOM_APP_NAME CUSTOM_FILENAME ADDITIONAL_OUTPUT_DIRS
+  
+  # Log custom options if set
+  if [ -n "$CUSTOM_APP_NAME" ]; then
+    log_info "Custom app name: $CUSTOM_APP_NAME"
+  fi
+  if [ -n "$CUSTOM_FILENAME" ]; then
+    log_info "Custom filename prefix: $CUSTOM_FILENAME"
+  fi
+  if [ "$OUTPUT_DIR" != "./dist" ]; then
+    log_info "Custom output directory: $OUTPUT_DIR"
+  fi
+  if [ -n "$ADDITIONAL_OUTPUT_DIRS" ]; then
+    log_info "Additional output directories: $ADDITIONAL_OUTPUT_DIRS"
+  fi
+}
+
+# Parse custom options first
+parse_custom_options "$@"
+
+# Basic argument check
 case "$1" in
     -h|--help)
         show_help
