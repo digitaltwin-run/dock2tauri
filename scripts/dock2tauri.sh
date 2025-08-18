@@ -58,17 +58,31 @@ cleanup_existing_rpm_packages() {
     echo "  - $pkg"
   done
   
-  # Try to remove packages silently (non-interactive)
-  if echo "$existing_packages" | xargs sudo -n rpm -e 2>/dev/null; then
+  # Ask user for permission to remove conflicting packages
+  echo
+  echo -e "${YELLOW}Remove existing packages to prevent conflicts? [Y/n]${NC}"
+  read -r response
+  case "$response" in
+    [nN]|[nN][oO])
+      log_warning "Skipping package removal. Conflicts may occur during installation."
+      log_info "Manual removal commands:"
+      echo "$existing_packages" | while read -r pkg; do
+        echo "  sudo rpm -e --force --nodeps '$pkg'"
+      done
+      return 0
+      ;;
+  esac
+  
+  # Try to remove packages interactively
+  log_info "Removing conflicting packages..."
+  if echo "$existing_packages" | xargs sudo rpm -e --force --nodeps; then
     log_success "Successfully removed existing packages"
-  elif echo "$existing_packages" | xargs sudo -n rpm -e --nodeps 2>/dev/null; then
-    log_success "Successfully removed existing packages (with --nodeps)"
   else
-    log_warning "Could not auto-remove packages (sudo access needed). Manual removal may be required:"
+    log_warning "Could not remove some packages. Installation may conflict."
+    log_info "Try manual removal:"
     echo "$existing_packages" | while read -r pkg; do
       echo "  sudo rpm -e --force --nodeps '$pkg'"
     done
-    log_info "Continuing with build (conflicts may occur during installation)..."
   fi
 }
 
@@ -681,9 +695,9 @@ install_and_run_rpm() {
   # Install the RPM
   log_info "Installing RPM package..."
   if command -v dnf >/dev/null 2>&1; then
-    sudo dnf install -y "$rpm_file"
+    sudo dnf install -y --allowerasing "$rpm_file"
   elif command -v rpm >/dev/null 2>&1; then
-    sudo rpm -i "$rpm_file"
+    sudo rpm -i --force --replacepkgs "$rpm_file"
   else
     log_warning "Neither dnf nor rpm command found - cannot install RPM"
     return 1
