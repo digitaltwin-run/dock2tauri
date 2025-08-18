@@ -2,6 +2,37 @@
 
 # Dock2Tauri Bash Launcher
 # Usage: ./dock2tauri.sh <docker-image|Dockerfile> <host-port> <container-port> [--build] [--target=<triple>] [--health-url=<url>] [--timeout=<seconds>] [--cross]
+
+# Load environment configuration
+load_env_config() {
+  local project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  local env_file="$project_root/.env"
+  local env_example="$project_root/.env.example"
+  
+  # Create .env from .env.example if it doesn't exist
+  if [ ! -f "$env_file" ] && [ -f "$env_example" ]; then
+    echo "🔧 Creating .env from .env.example..."
+    cp "$env_example" "$env_file"
+    echo "✅ .env file created. You can customize it as needed."
+  fi
+  
+  # Load .env if it exists
+  if [ -f "$env_file" ]; then
+    echo "🔧 Loading configuration from .env..."
+    set -a  # automatically export all variables
+    source "$env_file" 2>/dev/null || true
+    set +a
+    echo "✅ Configuration loaded from .env"
+  fi
+  
+  # Set defaults for critical variables if not set
+  export BUILD_TIMEOUT="${BUILD_TIMEOUT:-600}"
+  export DOCKER_TIMEOUT="${DOCKER_TIMEOUT:-30}"
+  export RPM_CLEANUP_AUTO="${RPM_CLEANUP_AUTO:-true}"
+  export DEV_PORT="${DEV_PORT:-8081}"
+  export APP_NAME="${APP_NAME:-Dock2Tauri}"
+  export RPM_FORCE_INSTALL="${RPM_FORCE_INSTALL:-true}"
+}
 #   --build (-b)        Build Tauri release bundles instead of running `tauri dev`
 #   --target=<triple>   Pass target triple to `cargo tauri build`, e.g. --target=x86_64-pc-windows-gnu
 #   --health-url=<url>  Override readiness URL (default: http://localhost:HOST_PORT)
@@ -60,17 +91,59 @@ cleanup_existing_rpm_packages() {
   
   # Automatically remove conflicting packages without asking
   log_info "Automatically removing conflicting packages..."
-  if echo "$existing_packages" | xargs sudo rpm -e --force --nodeps 2>/dev/null; then
-    log_success "Successfully removed existing packages"
+  log_info "DEBUG: Found packages to remove:"
+  echo "$existing_packages" | while read -r pkg; do
+    echo "  - $pkg"
+  done
+  
+  # Method 1: Try dnf remove first (handles dependencies better)
+  if command -v dnf >/dev/null 2>&1; then
+    log_info "Attempting removal with dnf..."
+    if echo "$existing_packages" | xargs sudo dnf remove -y 2>/dev/null; then
+      log_success "Successfully removed packages with dnf"
+      return 0
+    else
+      log_warning "dnf removal failed, trying rpm..."
+    fi
+  fi
+  
+  # Method 2: Try rpm with --allmatches to remove all versions
+  if echo "$existing_packages" | xargs sudo rpm -e --force --nodeps --allmatches 2>/dev/null; then
+    log_success "Successfully removed packages with rpm --allmatches"
+    return 0
   else
-    log_warning "Could not remove some packages automatically. Attempting force removal..."
-    # Try one by one with maximum force
-    echo "$existing_packages" | while read -r pkg; do
-      if [ -n "$pkg" ]; then
-        sudo rpm -e --force --nodeps --noscripts "$pkg" 2>/dev/null || true
+    log_warning "Standard removal failed. Attempting individual package removal..."
+  fi
+  
+  # Method 3: Remove packages one by one with maximum force
+  local removal_success=0
+  echo "$existing_packages" | while read -r pkg; do
+    if [ -n "$pkg" ]; then
+      log_info "  Removing: $pkg"
+      if sudo rpm -e --force --nodeps --noscripts --allmatches "$pkg" 2>/dev/null; then
+        log_success "    ✅ Removed: $pkg"
+        removal_success=1
+      else
+        log_warning "    ❌ Failed to remove: $pkg"
+        # Try with different approach - get all matching packages
+        local matching_packages=$(rpm -qa | grep "$pkg" | head -10)
+        if [ -n "$matching_packages" ]; then
+          echo "$matching_packages" | xargs sudo rpm -e --force --nodeps --noscripts 2>/dev/null || true
+        fi
       fi
+    fi
+  done
+  
+  # Final verification
+  local remaining=$(rpm -qa | grep dock2-tauri | wc -l)
+  if [ "$remaining" -eq 0 ]; then
+    log_success "✅ All conflicting packages successfully removed"
+  else
+    log_warning "⚠️ $remaining packages may still remain. Continuing with installation..."
+    log_info "Remaining packages:"
+    rpm -qa | grep dock2-tauri | while read -r pkg; do
+      echo "  - $pkg"
     done
-    log_info "Force removal completed"
   fi
 }
 
