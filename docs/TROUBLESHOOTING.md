@@ -202,6 +202,34 @@ docker run -it --rm <image> /bin/sh
 
 ### 3. Package Manager Issues
 
+#### ❌ Package Manager Detection Issues (Fedora/Mixed Systems)
+**Symptoms:**
+- `install_deps.sh` tries to use `apt-get` on Fedora systems
+- Installation fails with "Unable to locate package" for standard packages
+- System has multiple package managers installed (e.g., `apt` and `dnf`)
+
+**Root cause:** 
+Systems with both `apt` and `dnf` installed (common in development environments) may have the installer script incorrectly detect `apt` as the primary package manager on Fedora-based systems.
+
+**Solutions:**
+```bash
+# Option 1: Use the corrected install script (recommended)
+make install-deps YES=1
+
+# Option 2: Manual installation with correct package manager
+# For Fedora/RHEL/CentOS systems:
+sudo dnf install -y @development-tools curl pkgconf-pkg-config \
+  gtk3-devel libappindicator-gtk3 librsvg2-tools patchelf file rpm-build \
+  webkit2gtk4.0-devel glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel atk-devel
+
+# Option 3: Verify which package manager to use
+cat /etc/os-release  # Check your OS ID
+# If ID=fedora, use dnf; if ID=ubuntu/debian, use apt
+```
+
+**Prevention:**
+The issue has been fixed in the latest version of `scripts/install_deps.sh` which now prioritizes package manager detection based on OS ID rather than command availability.
+
 #### ❌ APT Repository Errors
 **Symptoms:**
 - `The repository does not have a Release file`
@@ -247,6 +275,8 @@ sudo apt install -y build-essential curl pkg-config libgtk-3-dev \
 # Manual installation (Fedora/RHEL)
 sudo dnf install -y @development-tools curl pkgconf-pkg-config \
   gtk3-devel libappindicator-gtk3 librsvg2-tools patchelf file rpm-build
+# Additional GTK/WebKit dependencies needed for Tauri
+sudo dnf install -y webkit2gtk4.0-devel glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel atk-devel
 
 # Manual installation (Arch/Manjaro)
 sudo pacman -Sy --needed base-devel curl pkgconf gtk3 librsvg patchelf file rpm-tools

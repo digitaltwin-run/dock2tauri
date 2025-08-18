@@ -82,6 +82,12 @@ Conventions
 
 ## Recent Achievements (August 2025) ✅
 
+- [x] **Package Manager Detection Fix** (2025-08-18)
+  - Fixed `scripts/install_deps.sh` to correctly detect `dnf` on Fedora systems
+  - Prioritized package manager detection based on OS ID rather than command availability
+  - Added comprehensive WebKitGTK dependencies for Tauri builds on Fedora/RHEL
+  - Updated troubleshooting documentation with specific Fedora installation guidance
+
 - [x] **Cross-compilation Intelligence** (2025-08-17)
   - Intelligent target filtering based on available toolchains
   - Automatic AppImage skipping in cross-mode with override option

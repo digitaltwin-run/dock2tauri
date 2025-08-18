@@ -139,8 +139,8 @@ install_deps_apt() {
 install_deps_dnf() {
   log_info "Detected dnf-based distro"
   run sudo dnf install -y @development-tools curl pkgconf-pkg-config gtk3-devel libappindicator-gtk3 librsvg2-tools patchelf file rpm-build rpm
-  # Additional GTK/WebKit dependencies needed for Tauri
-  run sudo dnf install -y webkit2gtk4.0-devel glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel atk-devel
+  # Additional GTK/WebKit dependencies needed for Tauri (v4.1 with libsoup3)
+  run sudo dnf install -y webkit2gtk4.1-devel libsoup3-devel javascriptcoregtk4.1-devel glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel atk-devel
   # dpkg might be available on Fedora for building .deb
   if ! need_cmd dpkg-deb; then
     run sudo dnf install -y dpkg || true

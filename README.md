@@ -30,11 +30,25 @@ Dock2Tauri is a lightweight bridge that allows you to run any Docker container a
 
 ### Installation
 
+**One-liner installation:**
+```bash
+git clone https://github.com/digitaltwin-run/dock2tauri.git && cd dock2tauri && make install-deps YES=1
+```
+
+**Quick usage:**
+```bash
+./scripts/dock2tauri.sh nginx:alpine 8088 80
+```
+OR
+```bash
+./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8088 80 --build
+```
+
+**Full installation example:**
 ```bash
 git clone https://github.com/digitaltwin-run/dock2tauri.git
 cd dock2tauri
 make install
-./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8088 80 --build
 ```
 
 ```bash
