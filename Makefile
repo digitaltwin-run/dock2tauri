@@ -189,10 +189,10 @@ list: ## List active dock2tauri containers
 	@docker ps --filter "name=dock2tauri-*" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
 
 # Testing
-test: test-bash test-python test-nodejs ## Run all launcher tests
+test: test-scripts test-integration ## Run all tests
 
-test-bash: ## Test bash script launcher
-	@echo "$(BLUE)🧪 Testing Bash launcher...$(NC)"
+test-scripts: ## Test all script launchers (bash, python, nodejs)
+	@echo "$(BLUE)🧪 Testing script launchers...$(NC)"
 	@timeout 10 ./scripts/dock2tauri.sh nginx:alpine 8081 80 >/dev/null 2>&1 || true
 	@sleep 2
 	@if curl -s http://localhost:8081 >/dev/null; then \
@@ -202,16 +202,9 @@ test-bash: ## Test bash script launcher
 		echo "$(RED)❌ Bash launcher: FAILED$(NC)"; \
 	fi
 
-test-python: ## Test Python script launcher  
-	@echo "$(BLUE)🧪 Testing Python launcher...$(NC)"
-	@timeout 10 python3 scripts/dock2tauri.py --image nginx:alpine --host-port 8082 --container-port 80 >/dev/null 2>&1 || true &
-	@sleep 3
-	@if curl -s http://localhost:8082 >/dev/null; then \
-		echo "$(GREEN)✅ Python launcher: PASSED$(NC)"; \
-		docker stop $$(docker ps -q --filter "publish=8082") 2>/dev/null || true; \
-	else \
-		echo "$(RED)❌ Python launcher: FAILED$(NC)"; \
-	fi
+test-integration: ## Test build and integration workflows
+	@echo "$(BLUE)🧪 Testing integration workflows...$(NC)"
+	@cd tests/workflow && python3 test_build_install.py
 
 test-nodejs: ## Test Node.js script launcher
 	@echo "$(BLUE)🧪 Testing Node.js launcher...$(NC)"
