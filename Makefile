@@ -22,7 +22,7 @@ YELLOW = \033[1;33m
 BLUE = \033[0;34m
 NC = \033[0m # No Color
 
-.PHONY: help install install-deps install-deps-dry-run test-install dev build clean test nginx grafana jupyter portainer launch stop-all list logs status examples
+.PHONY: help install install-deps install-deps-dry-run test-install dev build run clean test nginx grafana jupyter portainer launch stop-all list logs status examples
 
 # Default target
 all: help
@@ -73,6 +73,10 @@ dev: ## Start development mode with control panel
 build: ## Build production version
 	@echo "$(BLUE)🏗️  Building Dock2Tauri...$(NC)"
 	@cd src-tauri && cargo tauri build
+
+run: ## Run latest built application (detects OS and package type)
+	@echo "$(BLUE)🚀 Running latest Dock2Tauri build...$(NC)"
+	@./scripts/run-app.sh
 
 # Quick launch presets
 nginx: ## Launch Nginx web server (port 8088)

@@ -338,6 +338,7 @@ make launch IMAGE=redis:alpine HOST_PORT=6379 CONTAINER_PORT=6379
 ```bash
 make dev                     # Start development mode with hot reload
 make build                   # Build production bundles
+make run                     # Run latest built application (auto-detects OS and package type)
 make test                    # Run all launcher tests (Bash, Python, Node.js)
 make test-bash               # Test Bash launcher only
 make test-python             # Test Python launcher only  
