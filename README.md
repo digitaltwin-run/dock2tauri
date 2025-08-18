@@ -113,3 +113,61 @@ Behavioral details:
 
 - When the input is a Dockerfile path and `--build` is not provided, the CLI defaults to build mode and exports bundles.
 - If `--target` is provided, only that target is built; without `--target`, the native target is built, and with `--cross`, best-effort cross targets are attempted if toolchains are installed.
+
+## Bundle Installation
+
+After generating bundles, you can install them on your system:
+
+### DEB packages (Ubuntu/Debian)
+```bash
+sudo dpkg -i bundle/linux-x64/deb/*.deb
+```
+
+### RPM packages (Fedora/CentOS/RHEL)
+```bash
+sudo rpm -U bundle/linux-x64/rpm/*.rpm
+```
+
+## Troubleshooting
+
+### RPM Package Conflicts
+
+If you encounter RPM conflicts like:
+```
+Error running transaction: file /usr/bin/my-tauri-app from install of dock2-tauri-... conflicts with file from package dock2-tauri-...
+```
+
+**Solutions:**
+
+1. **Use upgrade instead of install (RECOMMENDED):**
+   ```bash
+   sudo rpm -U bundle/linux-x64/rpm/your-package.rpm
+   ```
+
+2. **Remove old version first:**
+   ```bash
+   sudo rpm -e old-package-name
+   sudo rpm -i bundle/linux-x64/rpm/your-package.rpm
+   ```
+
+3. **Force installation (overwrites conflicts):**
+   ```bash
+   sudo rpm -i --force bundle/linux-x64/rpm/your-package.rpm
+   ```
+
+4. **Switch to DEB format:**
+   ```bash
+   sudo rpm -e old-package-name
+   sudo dpkg -i bundle/linux-x64/deb/your-package.deb
+   ```
+
+### Check installed packages
+```bash
+# List all dock2-tauri packages
+rpm -qa | grep dock2-tauri
+dpkg -l | grep dock2-tauri
+
+# Get package details
+rpm -qi package-name
+dpkg -s package-name
+```

@@ -6,12 +6,10 @@ import platform
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
-from glob import glob
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import List, Optional
 
 
 BLUE = "\033[0;34m"
@@ -662,7 +660,7 @@ This folder contains packaged desktop application bundles produced by Tauri for 
         total_size_mb = total_size / (1024 * 1024)
         print(f"\n{'='*60}")
         print(f"📊 TOTAL: {total_files} files, {total_size_mb:.1f}MB")
-        print(f"🚀 Ready for installation and deployment!")
+        print("🚀 Ready for installation and deployment!")
         print(f"{'='*60}")
 
     def _launch_application(self) -> None:
