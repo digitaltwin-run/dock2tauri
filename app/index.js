@@ -1,8 +1,29 @@
-// Tauri API imports
-const { invoke } = window.__TAURI__.tauri;
-const { platform, arch, version } = window.__TAURI__.os;
-const { appName, appVersion } = window.__TAURI__.app;
-const { open } = window.__TAURI__.shell;
+// Tauri API imports with debugging
+let invoke, platform, arch, version, appName, appVersion, open;
+
+if (window.__TAURI__) {
+    console.log('✅ Tauri API detected');
+    ({ invoke } = window.__TAURI__.tauri);
+    ({ platform, arch, version } = window.__TAURI__.os);
+    ({ appName, appVersion } = window.__TAURI__.app);
+    ({ open } = window.__TAURI__.shell);
+} else {
+    console.error('❌ Tauri API not available - running in browser mode');
+    // Mock functions for browser testing
+    invoke = async (cmd, args) => {
+        console.warn('Mock invoke:', cmd, args);
+        return { success: false, error: 'Tauri API not available - this is browser mode' };
+    };
+    platform = async () => 'browser';
+    arch = async () => 'unknown';
+    version = async () => 'browser';
+    appName = async () => 'Dock2Tauri (Browser)';
+    appVersion = async () => '1.0.0-browser';
+    open = async (url) => {
+        console.log('Mock open:', url);
+        window.open(url, '_blank');
+    };
+}
 
 // DOM elements
 const output = document.getElementById('output');
@@ -225,6 +246,31 @@ refreshBtn.addEventListener('click', async () => {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 DOM Content Loaded - initializing app');
+    
+    // Debug: Check if all DOM elements exist
+    console.log('DOM elements check:');
+    console.log('- output:', output ? '✅' : '❌');
+    console.log('- dockerInfoBtn:', dockerInfoBtn ? '✅' : '❌');
+    console.log('- systemInfoBtn:', systemInfoBtn ? '✅' : '❌');
+    console.log('- refreshBtn:', refreshBtn ? '✅' : '❌');
+    console.log('- launchCustomBtn:', launchCustomBtn ? '✅' : '❌');
+    console.log('- presetBtns count:', presetBtns.length);
+    console.log('- containersList:', containersList ? '✅' : '❌');
+    
+    // Debug: Test button click detection
+    if (dockerInfoBtn) {
+        dockerInfoBtn.addEventListener('click', () => {
+            console.log('Docker Info button clicked!');
+        });
+    }
+    
+    if (systemInfoBtn) {
+        systemInfoBtn.addEventListener('click', () => {
+            console.log('System Info button clicked!');
+        });
+    }
+    
     showInfo('🚀 TauriDock Control Panel ready!\n\nSelect a preset or configure a custom Docker container to launch as a desktop app.');
     
     // Initial containers refresh
@@ -232,6 +278,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Set up periodic refresh every 30 seconds
     setInterval(refreshContainers, 30000);
+    
+    console.log('✅ App initialization complete');
 });
 
 // Make functions globally available for onclick handlers
