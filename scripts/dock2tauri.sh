@@ -58,31 +58,19 @@ cleanup_existing_rpm_packages() {
     echo "  - $pkg"
   done
   
-  # Ask user for permission to remove conflicting packages
-  echo
-  echo -e "${YELLOW}Remove existing packages to prevent conflicts? [Y/n]${NC}"
-  read -r response
-  case "$response" in
-    [nN]|[nN][oO])
-      log_warning "Skipping package removal. Conflicts may occur during installation."
-      log_info "Manual removal commands:"
-      echo "$existing_packages" | while read -r pkg; do
-        echo "  sudo rpm -e --force --nodeps '$pkg'"
-      done
-      return 0
-      ;;
-  esac
-  
-  # Try to remove packages interactively
-  log_info "Removing conflicting packages..."
-  if echo "$existing_packages" | xargs sudo rpm -e --force --nodeps; then
+  # Automatically remove conflicting packages without asking
+  log_info "Automatically removing conflicting packages..."
+  if echo "$existing_packages" | xargs sudo rpm -e --force --nodeps 2>/dev/null; then
     log_success "Successfully removed existing packages"
   else
-    log_warning "Could not remove some packages. Installation may conflict."
-    log_info "Try manual removal:"
+    log_warning "Could not remove some packages automatically. Attempting force removal..."
+    # Try one by one with maximum force
     echo "$existing_packages" | while read -r pkg; do
-      echo "  sudo rpm -e --force --nodeps '$pkg'"
+      if [ -n "$pkg" ]; then
+        sudo rpm -e --force --nodeps --noscripts "$pkg" 2>/dev/null || true
+      fi
     done
+    log_info "Force removal completed"
   fi
 }
 
