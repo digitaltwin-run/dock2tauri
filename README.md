@@ -19,6 +19,11 @@ Dock2Tauri is a lightweight bridge that allows you to run any Docker container a
 - 🔧 **Tauri v2 Compatible**: Proper schema validation and configuration
 - 🧪 **Health Checks**: Configurable readiness URL and timeout
 - 🧹 **Ephemeral Tauri config**: Generated on the fly and passed via `--config`; no mutations to `src-tauri/tauri.conf.json`
+- ⚙️ **Environment Configuration**: Centralized .env-based configuration system
+- 📁 **Custom Binary Paths**: Configurable output directories and naming conventions
+- 🐳 **Docker Testing Environment**: Isolated testing with comprehensive multi-language test suite
+- 🔍 **Enhanced RPM Management**: Intelligent package conflict resolution with debugging
+- 🎯 **Advanced Build Options**: Custom app names, filename prefixes, and multi-location output
 
 ## 🚀 Quick Start
 
@@ -339,10 +344,24 @@ make launch IMAGE=redis:alpine HOST_PORT=6379 CONTAINER_PORT=6379
 make dev                     # Start development mode with hot reload
 make build                   # Build production bundles
 make run                     # Run latest built application (auto-detects OS and package type)
+
+# Comprehensive Testing Suite
 make test                    # Run all launcher tests (Bash, Python, Node.js)
-make test-bash               # Test Bash launcher only
-make test-python             # Test Python launcher only  
-make test-nodejs             # Test Node.js launcher only
+make test-bash               # Test Bash script validation and integration
+make test-python             # Test Python workflow automation
+make test-rust               # Test Rust backend Tauri commands
+make test-playwright         # Test UI interactions with Playwright (E2E)
+make test-cypress            # Test UI with Cypress (alternative E2E)
+make test-all                # Run complete test suite including E2E
+
+# Docker Isolated Testing
+make test-docker-build       # Build Docker test environment
+make test-docker             # Run all tests in clean Docker container
+make test-docker-shell       # Open interactive shell in test container
+
+# Test Setup and Maintenance
+make test-setup              # Install test dependencies (Playwright browsers, etc.)
+make test-clean              # Clean test outputs and dependencies
 ```
 
 ### 🧹 Container Management
@@ -358,6 +377,70 @@ make clean                   # Clean build artifacts and stop containers
 make examples                # Show detailed usage examples
 make help                    # List all available commands
 ```
+
+## ⚙️ Configuration System
+
+Dock2Tauri now features a comprehensive .env-based configuration system for consistent settings across all components.
+
+### Environment Configuration
+Copy `.env.example` to `.env` and customize as needed:
+```bash
+cp .env.example .env
+```
+
+Key configuration options:
+```bash
+# Development Configuration
+DEV_PORT=8081                    # Development server port
+BUILD_TIMEOUT=600                # Build timeout in seconds
+
+# Output and Naming Customization  
+OUTPUT_DIR=./dist                # Custom output directory for binaries
+CUSTOM_APP_NAME=""               # Override auto-generated app name
+CUSTOM_FILENAME=""               # Custom filename prefix for packages
+ADDITIONAL_OUTPUT_DIRS=""        # Additional copy locations (comma-separated)
+
+# RPM Package Management
+RPM_CLEANUP_AUTO=true            # Automatically remove conflicting packages
+RPM_FORCE_INSTALL=true           # Force RPM installation
+
+# Docker Testing
+TEST_TIMEOUT=300                 # Test execution timeout
+TEST_PARALLEL=true               # Enable parallel test execution
+```
+
+### Advanced Command Line Options
+All launchers now support custom binary paths and naming:
+
+```bash
+# Custom output directory and app name
+./scripts/dock2tauri.sh nginx:alpine 8088 80 --build \
+  --output-dir="/home/user/builds" \
+  --app-name="NginxDesktop"
+
+# Custom filename prefix and multiple copy locations
+./scripts/dock2tauri.sh grafana/grafana 3001 3000 --build \
+  --filename="grafana-v1" \
+  --copy-to="/opt/apps,/usr/local/bin"
+
+# Complete customization example
+./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8088 80 --build \
+  --app-name="NotesApp" \
+  --filename="notes-desktop" \
+  --output-dir="/tmp/my-builds" \
+  --copy-to="/home/user/apps,/opt/dock2tauri"
+```
+
+./scripts/dock2tauri.sh ./examples/pwa-notes/Dockerfile 8088 80 --build \
+  --app-name="NotesApp" \
+  --filename="notes-desktop" \
+  --output-dir="/tmp/my-builds" \
+  --copy-to="/home/tom/builds"
+
+check build files
+```bash
+ls -la /home/tom/builds
+```        
 
 ## 📋 Usage Modes
 
@@ -386,6 +469,38 @@ Builds for specific target architectures:
 ./scripts/dock2tauri.sh nginx:alpine 8088 80 --build --target=x86_64-pc-windows-gnu
 ```
 Enable best-effort cross-target builds with `--cross` (Bash launcher). Cross builds require proper toolchains/sysroots and may fail without additional setup.
+
+## 🎯 Recent Improvements (2025)
+
+### Enhanced Configuration System
+- **🔧 .env Configuration**: Centralized configuration through `.env.example` template with automatic loading and defaults
+- **📁 Custom Build Paths**: Support for custom output directories (`OUTPUT_DIR`) and filename prefixes (`CUSTOM_FILENAME`)
+- **🏷️ Custom App Names**: Override auto-generated app names with `CUSTOM_APP_NAME` for branded deployments
+- **📦 Multi-Location Output**: Copy binaries to additional directories with `ADDITIONAL_OUTPUT_DIRS`
+
+### Advanced CLI Options
+```bash
+# New command-line arguments for flexible workflows
+--output-dir=/path/to/builds    # Custom output directory
+--app-name="CustomAppName"      # Override app name
+--filename="custom-prefix"      # Custom filename prefix
+--copy-to="/opt/apps,/usr/bin"  # Copy to multiple locations
+```
+
+### Robust Package Management
+- **🔍 Intelligent RPM Cleanup**: Multi-method package conflict resolution with detailed debugging
+- **⚙️ Configurable RPM Behavior**: Control auto-cleanup and force-install through environment variables
+- **📊 Enhanced Logging**: Comprehensive build and packaging status reporting
+
+### Docker Testing Environment
+- **🐳 Isolated Testing**: Complete Dockerfile-based testing environment (`Dockerfile.test`)
+- **🧪 Multi-Language Coverage**: Bash, Python, Rust, Playwright, and Cypress test suites
+- **⚡ Parallel Execution**: Configurable parallel test execution for faster CI/CD
+
+### Build System Enhancements
+- **🛡️ JSON Validation**: Fixed `tauri.conf.json` syntax and HTTP server configuration
+- **🔄 Ephemeral Config**: Dynamic configuration generation without mutating source files
+- **📦 Conditional Bundling**: Smart package format selection based on available system tools
 
 ## 🧩 PWA Examples
 

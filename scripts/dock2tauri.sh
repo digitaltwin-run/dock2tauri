@@ -48,6 +48,16 @@ load_env_config() {
   export CUSTOM_APP_NAME="${CUSTOM_APP_NAME:-}"
   export CUSTOM_FILENAME="${CUSTOM_FILENAME:-}"
   export ADDITIONAL_OUTPUT_DIRS="${ADDITIONAL_OUTPUT_DIRS:-}"
+  
+  # Update EXPORT_DIR to use custom OUTPUT_DIR (resolve relative paths)
+  if [[ "$OUTPUT_DIR" = /* ]]; then
+    # Absolute path
+    EXPORT_DIR="$OUTPUT_DIR"
+  else
+    # Relative path - resolve from BASE_DIR
+    EXPORT_DIR="$BASE_DIR/$OUTPUT_DIR"
+  fi
+  export EXPORT_DIR
 }
 #   --build (-b)        Build Tauri release bundles instead of running `tauri dev`
 #   --target=<triple>   Pass target triple to `cargo tauri build`, e.g. --target=x86_64-pc-windows-gnu
@@ -191,7 +201,7 @@ HEALTH_URL=""
 TIMEOUT=30
 # Export settings
 EXPORT_BUNDLES=false
-EXPORT_DIR="$BASE_DIR/dist"
+EXPORT_DIR="$BASE_DIR/dist"  # Default, will be updated by load_env_config
 # Whether to attempt cross targets automatically
 CROSS_BUILD=false
 # Candidate cross targets we may attempt if installed (best-effort)
@@ -876,8 +886,11 @@ show_help() {
     echo "  DOCK2TAURI_DEBUG=1    Enable debug mode"
 }
 
-# Parse arguments (advanced parsing for custom options)
+# Parse arguments (advanced parsing for custom options) 
+# Returns filtered arguments (non-custom) via global FILTERED_ARGS array
 parse_custom_options() {
+  FILTERED_ARGS=()
+  
   while [[ $# -gt 0 ]]; do
     case $1 in
       --output-dir=*)
@@ -901,14 +914,25 @@ parse_custom_options() {
         exit 0
         ;;
       *)
-        # Not a custom option, keep it for main parsing
-        break
+        # Not a custom option, add to filtered args
+        FILTERED_ARGS+=("$1")
+        shift
         ;;
     esac
   done
   
   # Export the updated variables
   export OUTPUT_DIR CUSTOM_APP_NAME CUSTOM_FILENAME ADDITIONAL_OUTPUT_DIRS
+  
+  # Update EXPORT_DIR when OUTPUT_DIR changes (same logic as load_env_config)
+  if [[ "$OUTPUT_DIR" = /* ]]; then
+    # Absolute path
+    EXPORT_DIR="$OUTPUT_DIR"
+  else
+    # Relative path - resolve from BASE_DIR
+    EXPORT_DIR="$BASE_DIR/$OUTPUT_DIR"
+  fi
+  export EXPORT_DIR
   
   # Log custom options if set
   if [ -n "$CUSTOM_APP_NAME" ]; then
@@ -919,14 +943,18 @@ parse_custom_options() {
   fi
   if [ "$OUTPUT_DIR" != "./dist" ]; then
     log_info "Custom output directory: $OUTPUT_DIR"
+    log_info "Resolved export path: $EXPORT_DIR"
   fi
   if [ -n "$ADDITIONAL_OUTPUT_DIRS" ]; then
     log_info "Additional output directories: $ADDITIONAL_OUTPUT_DIRS"
   fi
 }
 
-# Parse custom options first
+# Parse custom options first and get filtered arguments
 parse_custom_options "$@"
+
+# Use filtered arguments for main parsing
+set -- "${FILTERED_ARGS[@]}"
 
 # Basic argument check
 case "$1" in
