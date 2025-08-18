@@ -6,7 +6,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 TAURIDO := $(VENV)/bin/taurido
 
-.PHONY: venv install dev-install test lint build clean run-example build-local build-local-launch
+.PHONY: venv install dev-install test lint build clean run-example build-local build-local-launch list-bundles build-local-list
 
 venv:
 	@test -x "$(VENV)/bin/python" || $(PYTHON) -m venv $(VENV)
@@ -40,3 +40,11 @@ build-local: dev-install
 # Build bundles locally and launch the application
 build-local-launch: dev-install
 	cd ../dock2tauri && $(abspath $(TAURIDO)) --export-dir $(abspath bundle) --launch ./examples/pwa-hello/Dockerfile 8088 80
+
+# List contents of existing bundles in ./bundle/ directory
+list-bundles: dev-install
+	cd ../dock2tauri && $(abspath $(TAURIDO)) --export-dir $(abspath bundle) --list-bundles ./examples/pwa-hello/Dockerfile 8088 80
+
+# Build bundles locally and show their contents
+build-local-list: dev-install
+	cd ../dock2tauri && $(abspath $(TAURIDO)) --export-dir $(abspath bundle) --list-bundles ./examples/pwa-hello/Dockerfile 8088 80

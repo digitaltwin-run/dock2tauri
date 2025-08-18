@@ -31,6 +31,12 @@ From any directory, you can run taurido with different project configurations:
 # Use current taurido project and export to local bundle folder
 taurido --export-dir ./bundle ./examples/pwa-hello/Dockerfile 8088 80
 
+# Build bundles and automatically launch the application
+taurido --export-dir ./bundle --launch ./examples/pwa-hello/Dockerfile 8088 80
+
+# Build bundles and show detailed contents listing
+taurido --export-dir ./bundle --list-bundles ./examples/pwa-hello/Dockerfile 8088 80
+
 # Use external Dock2Tauri project
 taurido --project-root ../dock2tauri ./examples/pwa-hello/Dockerfile 8088 80
 
@@ -62,12 +68,16 @@ make clean         # Remove virtual environment and build artifacts
 make run-example        # Build example from ../dock2tauri/examples/pwa-hello/
 make build-local        # Build example and export bundles to ./bundle/
 make build-local-launch # Build example, export bundles to ./bundle/, and launch the app
+make list-bundles       # Show detailed contents of existing bundles in ./bundle/
+make build-local-list   # Build example, export bundles to ./bundle/, and show contents
 ```
 
 **Target descriptions:**
 - `run-example`: Assumes the Dock2Tauri repository is located at `../dock2tauri`, builds the pwa-hello example Dockerfile, and exports bundles to `../dock2tauri/dist/`
 - `build-local`: Same as `run-example` but exports bundles locally to `./bundle/` directory in the taurido repository
 - `build-local-launch`: Same as `build-local` but automatically launches the application after successful bundle creation
+- `list-bundles`: Shows detailed contents and file sizes of existing bundles in `./bundle/` directory
+- `build-local-list`: Same as `build-local` but also displays detailed bundle contents after export
 
 Options are aligned with the Bash launcher:
 
@@ -79,6 +89,7 @@ Options are aligned with the Bash launcher:
 - `--project-root <path>` (directory containing `src-tauri/`; auto-detected if omitted)
 - `--export-dir <path>` (custom directory to export bundles; default: project-root/dist)
 - `--launch` (launch the application after successful bundle creation)
+- `--list-bundles` (show detailed contents and file sizes of generated bundle directories)
 
 Environment toggles:
 
