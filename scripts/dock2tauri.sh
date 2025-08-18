@@ -560,6 +560,9 @@ build_and_export() {
   generate_dist_root_readme
   build_android_best_effort || true
   log_success "All available bundles exported to: $EXPORT_DIR"
+  
+  # Offer to install and run RPM package if built successfully
+  install_and_run_rpm
 }
 
 # Generate root dist/README.md listing built platforms
@@ -632,6 +635,78 @@ build_android_best_effort() {
     'Note: Requires Android SDK/NDK, Java, and Gradle properly configured.' \
     > "$dest_dir/README.md"
   log_success "Exported Android APKs to: $dest_dir"
+}
+
+# Install and run the built RPM package if successful
+install_and_run_rpm() {
+  log_info "Checking for built RPM packages..."
+  
+  local rpm_dir="$BASE_DIR/src-tauri/target/release/bundle/rpm"
+  if [ ! -d "$rpm_dir" ]; then
+    log_warning "No RPM directory found at $rpm_dir"
+    return 0
+  fi
+  
+  local rpm_files
+  mapfile -t rpm_files < <(find "$rpm_dir" -name "Dock2Tauri*.rpm" -type f 2>/dev/null)
+  
+  if [ ${#rpm_files[@]} -eq 0 ]; then
+    log_warning "No Dock2Tauri RPM packages found in $rpm_dir"
+    return 0
+  fi
+  
+  local rpm_file="${rpm_files[0]}"
+  log_success "Found RPM package: $(basename "$rpm_file")"
+  
+  # Ask user if they want to install and run
+  if [ -t 0 ]; then  # Only prompt if running interactively
+    echo
+    echo -e "${YELLOW}Do you want to install and run the RPM package? [y/N]${NC}"
+    read -r response
+    case "$response" in
+      [yY]|[yY][eE][sS])
+        ;;
+      *)
+        log_info "Skipping RPM installation."
+        log_info "To install manually: sudo dnf install \"$rpm_file\""
+        return 0
+        ;;
+    esac
+  else
+    log_info "Non-interactive mode - skipping automatic RPM installation"
+    log_info "To install manually: sudo dnf install \"$rpm_file\""
+    return 0
+  fi
+  
+  # Install the RPM
+  log_info "Installing RPM package..."
+  if command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y "$rpm_file"
+  elif command -v rpm >/dev/null 2>&1; then
+    sudo rpm -i "$rpm_file"
+  else
+    log_warning "Neither dnf nor rpm command found - cannot install RPM"
+    return 1
+  fi
+  
+  if [ $? -eq 0 ]; then
+    log_success "RPM package installed successfully!"
+    
+    # Try to run the application
+    log_info "Attempting to launch Dock2Tauri..."
+    if command -v dock2tauri >/dev/null 2>&1; then
+      dock2tauri &
+      log_success "Dock2Tauri launched! Check your desktop for the application window."
+    elif command -v Dock2Tauri >/dev/null 2>&1; then
+      Dock2Tauri &
+      log_success "Dock2Tauri launched! Check your desktop for the application window."
+    else
+      log_info "Application installed. You can find Dock2Tauri in your applications menu."
+    fi
+  else
+    log_warning "RPM installation failed"
+    return 1
+  fi
 }
 
 cleanup() {

@@ -213,8 +213,53 @@ install_arm64_cross_pacman() {
   log_warn "aarch64 pkg-config and dev libs may require AUR or a custom sysroot."
 }
 
+setup_build_environment() {
+  local pm="$1"
+  local id="$2"
+  
+  log_info "Setting up build environment..."
+  
+  # Set up PKG_CONFIG_PATH for different distros
+  case "$id" in
+    fedora|rhel|centos|rocky|alma)
+      echo 'export PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/share/pkgconfig:$PKG_CONFIG_PATH"' >> ~/.bashrc
+      log_info "Added PKG_CONFIG_PATH to ~/.bashrc for Fedora/RHEL"
+      ;;
+    debian|ubuntu|linuxmint|pop)
+      echo 'export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:$PKG_CONFIG_PATH"' >> ~/.bashrc
+      log_info "Added PKG_CONFIG_PATH to ~/.bashrc for Debian/Ubuntu"
+      ;;
+  esac
+  
+  # Ensure Rust/Cargo is in PATH
+  if [ -f "$HOME/.cargo/env" ]; then
+    echo 'source ~/.cargo/env' >> ~/.bashrc
+    log_info "Added Rust/Cargo to ~/.bashrc"
+  fi
+  
+  log_warn ""
+  log_warn "IMPORTANT BUILD INSTRUCTIONS:"
+  log_warn "================================"
+  log_warn "1. Restart your shell or run: source ~/.bashrc"
+  log_warn "2. NEVER use 'sudo' when building Tauri apps"
+  log_warn "3. Use: ./scripts/dock2tauri.sh ... --build (without sudo)"
+  log_warn "4. If you get 'cargo: command not found', run: source ~/.cargo/env"
+  log_warn ""
+}
+
 main() {
   parse_args "$@"
+  
+  # Warn if running with sudo
+  if [ "$EUID" -eq 0 ]; then
+    log_warn "WARNING: Running as root/sudo!"
+    log_warn "This will install system packages, but may cause issues with:"
+    log_warn "- Rust/Cargo environment setup"
+    log_warn "- Building Tauri apps later"
+    log_warn "Consider running without sudo if you only need environment setup."
+    log_warn ""
+  fi
+  
   log_info "Dock2Tauri dependency installer"
   IFS=',' read -r pm id like <<<"$(get_pm)"
   if [ -z "$pm" ]; then
@@ -248,6 +293,9 @@ main() {
     esac
   fi
 
+  # Configure environment for Tauri builds
+  setup_build_environment "$pm" "$id"
+  
   log_ok "Dependency setup completed"
 }
 
