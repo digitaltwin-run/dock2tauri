@@ -38,10 +38,11 @@ def log_error(msg: str) -> None:
 
 
 class Runner:
-    def __init__(self, base_dir: Optional[Path] = None, export_dir: Optional[Path] = None) -> None:
+    def __init__(self, base_dir: Optional[Path] = None, export_dir: Optional[Path] = None, launch_after_build: bool = False) -> None:
         self.base_dir = Path(base_dir) if base_dir else Path.cwd()
         self.src_tauri = self.base_dir / "src-tauri"
         self.export_dir = Path(export_dir) if export_dir else self.base_dir / "dist"
+        self.launch_after_build = launch_after_build
         self.tauri_config_path: Optional[Path] = None
         self.container_name: Optional[str] = None
         # Candidate cross targets
@@ -117,6 +118,10 @@ class Runner:
         self._build_android_best_effort()
         self._generate_dist_root_readme()
         log_success(f"All available bundles exported to: {self.export_dir}")
+        
+        # Launch application if requested
+        if self.launch_after_build:
+            self._launch_application()
 
     def cleanup(self) -> None:
         if self.tauri_config_path and self.tauri_config_path.exists():
@@ -555,6 +560,50 @@ This folder contains packaged desktop application bundles produced by Tauri for 
         lines.append("")
         lines.append("Each platform folder has its own README.md with installation instructions.")
         readme.write_text("\n".join(lines), encoding="utf-8")
+
+    def _launch_application(self) -> None:
+        """Launch the built application after successful bundle creation."""
+        log_info("Attempting to launch the built application...")
+        
+        # Look for executables in the export directory
+        linux_x64_dir = self.export_dir / "linux-x64"
+        if not linux_x64_dir.exists():
+            log_warning("No linux-x64 export directory found; cannot launch application.")
+            return
+            
+        # Find the built executable in src-tauri/target/release/
+        release_dir = self.src_tauri / "target" / "release"
+        if not release_dir.exists():
+            log_warning("No release build directory found; cannot launch application.")
+            return
+            
+        # Look for the main executable (usually the app name from Cargo.toml)
+        executable_path = None
+        for potential_exe in release_dir.iterdir():
+            if (potential_exe.is_file() and 
+                potential_exe.stat().st_mode & 0o111 and  # Executable permission
+                not potential_exe.name.endswith('.d') and
+                not potential_exe.name.startswith('build-') and
+                not potential_exe.name.startswith('deps')):
+                executable_path = potential_exe
+                break
+                
+        if not executable_path:
+            log_warning("No executable found in release directory; cannot launch application.")
+            return
+            
+        try:
+            log_info(f"Launching application: {executable_path.name}")
+            # Launch in background with nohup to detach from terminal
+            subprocess.Popen(
+                ["nohup", str(executable_path)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                preexec_fn=os.setsid  # Create new process group
+            )
+            log_success(f"✨ Application launched: {executable_path.name}")
+        except Exception as e:
+            log_error(f"Failed to launch application: {e}")
 
     # ---------- Utilities ----------
     def _run(self, cmd: List[str], cwd: Optional[Path] = None) -> None:

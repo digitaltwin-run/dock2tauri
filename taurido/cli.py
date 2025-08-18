@@ -28,6 +28,11 @@ def parse_args(argv=None):
         dest="export_dir",
         help="Custom directory to export bundles (default: project-root/dist).",
     )
+    parser.add_argument(
+        "--launch",
+        action="store_true",
+        help="Launch the application after successful bundle creation.",
+    )
 
     args = parser.parse_args(argv)
 
@@ -44,7 +49,8 @@ def main(argv=None):
     args = parse_args(argv)
     runner = Runner(
         base_dir=Path(args.project_root) if args.project_root else None,
-        export_dir=Path(args.export_dir) if args.export_dir else None
+        export_dir=Path(args.export_dir) if args.export_dir else None,
+        launch_after_build=args.launch
     )
     try:
         if args.build:
