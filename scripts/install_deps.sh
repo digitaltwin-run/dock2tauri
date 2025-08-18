@@ -91,7 +91,27 @@ get_pm() {
     id="${ID:-}"
     like="${ID_LIKE:-}"
   fi
-  if need_cmd apt-get; then pm=apt; elif need_cmd dnf; then pm=dnf; elif need_cmd yum; then pm=yum; elif need_cmd pacman; then pm=pacman; elif need_cmd zypper; then pm=zypper; else pm=""; fi
+  
+  # Prioritize package manager based on OS ID first, then availability
+  case "$id" in
+    fedora|rhel|centos|rocky|alma)
+      if need_cmd dnf; then pm=dnf; elif need_cmd yum; then pm=yum; else pm=""; fi
+      ;;
+    debian|ubuntu|linuxmint|pop)
+      if need_cmd apt-get; then pm=apt; else pm=""; fi
+      ;;
+    arch|manjaro|endeavouros)
+      if need_cmd pacman; then pm=pacman; else pm=""; fi
+      ;;
+    opensuse*|sle*)
+      if need_cmd zypper; then pm=zypper; else pm=""; fi
+      ;;
+    *)
+      # Fallback to detection by availability (old logic)
+      if need_cmd dnf; then pm=dnf; elif need_cmd apt-get; then pm=apt; elif need_cmd yum; then pm=yum; elif need_cmd pacman; then pm=pacman; elif need_cmd zypper; then pm=zypper; else pm=""; fi
+      ;;
+  esac
+  
   echo "$pm,$id,$like"
 }
 
@@ -119,6 +139,8 @@ install_deps_apt() {
 install_deps_dnf() {
   log_info "Detected dnf-based distro"
   run sudo dnf install -y @development-tools curl pkgconf-pkg-config gtk3-devel libappindicator-gtk3 librsvg2-tools patchelf file rpm-build rpm
+  # Additional GTK/WebKit dependencies needed for Tauri
+  run sudo dnf install -y webkit2gtk4.0-devel glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel atk-devel
   # dpkg might be available on Fedora for building .deb
   if ! need_cmd dpkg-deb; then
     run sudo dnf install -y dpkg || true
