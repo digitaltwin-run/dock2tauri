@@ -566,6 +566,105 @@ This folder contains packaged desktop application bundles produced by Tauri for 
         lines.append("Each platform folder has its own README.md with installation instructions.")
         readme.write_text("\n".join(lines), encoding="utf-8")
 
+    def _list_bundle_contents(self) -> None:
+        """List contents of generated bundle directories."""
+        log_info("📦 Bundle Contents Overview:")
+        
+        if not self.export_dir.exists():
+            log_warning("Export directory does not exist; no bundles to list.")
+            return
+            
+        # Track total stats
+        total_size = 0
+        total_files = 0
+        
+        print(f"\n{'='*60}")
+        print(f"📁 Export Directory: {self.export_dir}")
+        print(f"{'='*60}")
+        
+        # Walk through all subdirectories and files
+        for platform_dir in sorted(self.export_dir.iterdir()):
+            if platform_dir.is_dir():
+                print(f"\n🎯 Platform: {platform_dir.name}")
+                print(f"{'─'*40}")
+                
+                platform_size = 0
+                platform_files = 0
+                
+                # List all files in platform directory recursively
+                for item in sorted(platform_dir.rglob("*")):
+                    if item.is_file():
+                        try:
+                            size = item.stat().st_size
+                            size_mb = size / (1024 * 1024)
+                            relative_path = item.relative_to(platform_dir)
+                            
+                            # Format file size
+                            if size_mb >= 1:
+                                size_str = f"{size_mb:.1f}MB"
+                            elif size >= 1024:
+                                size_str = f"{size/1024:.1f}KB"
+                            else:
+                                size_str = f"{size}B"
+                                
+                            # Add file type icon
+                            if item.suffix.lower() in ['.deb']:
+                                icon = "📦"
+                            elif item.suffix.lower() in ['.rpm']:
+                                icon = "🔴"
+                            elif item.suffix.lower() in ['.appimage']:
+                                icon = "🖥️"
+                            elif item.suffix.lower() in ['.dmg']:
+                                icon = "🍎"
+                            elif item.suffix.lower() in ['.exe', '.msi']:
+                                icon = "🪟"
+                            elif item.suffix.lower() in ['.apk']:
+                                icon = "🤖"
+                            elif item.suffix.lower() in ['.md']:
+                                icon = "📝"
+                            else:
+                                icon = "📄"
+                                
+                            print(f"  {icon} {relative_path} ({size_str})")
+                            platform_size += size
+                            platform_files += 1
+                            
+                        except Exception:
+                            print(f"  ❓ {item.relative_to(platform_dir)} (size unknown)")
+                            platform_files += 1
+                
+                # Platform summary
+                platform_size_mb = platform_size / (1024 * 1024)
+                print(f"  📊 Platform Total: {platform_files} files, {platform_size_mb:.1f}MB")
+                
+                total_size += platform_size
+                total_files += platform_files
+            
+            elif platform_dir.is_file():
+                # Handle files in root export directory
+                try:
+                    size = platform_dir.stat().st_size
+                    size_mb = size / (1024 * 1024)
+                    if size_mb >= 1:
+                        size_str = f"{size_mb:.1f}MB"
+                    elif size >= 1024:
+                        size_str = f"{size/1024:.1f}KB"
+                    else:
+                        size_str = f"{size}B"
+                    print(f"\n📄 {platform_dir.name} ({size_str})")
+                    total_size += size
+                    total_files += 1
+                except Exception:
+                    print(f"\n❓ {platform_dir.name} (size unknown)")
+                    total_files += 1
+        
+        # Overall summary
+        total_size_mb = total_size / (1024 * 1024)
+        print(f"\n{'='*60}")
+        print(f"📊 TOTAL: {total_files} files, {total_size_mb:.1f}MB")
+        print(f"🚀 Ready for installation and deployment!")
+        print(f"{'='*60}")
+
     def _launch_application(self) -> None:
         """Launch the built application after successful bundle creation."""
         log_info("Attempting to launch the built application...")
