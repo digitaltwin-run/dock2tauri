@@ -59,13 +59,15 @@ make clean         # Remove virtual environment and build artifacts
 
 ### Example Usage
 ```bash
-make run-example   # Build example from ../dock2tauri/examples/pwa-hello/
-make build-local   # Build example and export bundles to ./bundle/
+make run-example        # Build example from ../dock2tauri/examples/pwa-hello/
+make build-local        # Build example and export bundles to ./bundle/
+make build-local-launch # Build example, export bundles to ./bundle/, and launch the app
 ```
 
 **Target descriptions:**
 - `run-example`: Assumes the Dock2Tauri repository is located at `../dock2tauri`, builds the pwa-hello example Dockerfile, and exports bundles to `../dock2tauri/dist/`
 - `build-local`: Same as `run-example` but exports bundles locally to `./bundle/` directory in the taurido repository
+- `build-local-launch`: Same as `build-local` but automatically launches the application after successful bundle creation
 
 Options are aligned with the Bash launcher:
 
@@ -76,6 +78,7 @@ Options are aligned with the Bash launcher:
 - `--cross` (best-effort, requires proper toolchains)
 - `--project-root <path>` (directory containing `src-tauri/`; auto-detected if omitted)
 - `--export-dir <path>` (custom directory to export bundles; default: project-root/dist)
+- `--launch` (launch the application after successful bundle creation)
 
 Environment toggles:
 

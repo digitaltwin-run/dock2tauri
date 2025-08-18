@@ -6,7 +6,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 TAURIDO := $(VENV)/bin/taurido
 
-.PHONY: venv install dev-install test lint build clean run-example build-local
+.PHONY: venv install dev-install test lint build clean run-example build-local build-local-launch
 
 venv:
 	@test -x "$(VENV)/bin/python" || $(PYTHON) -m venv $(VENV)
@@ -36,3 +36,7 @@ run-example: dev-install
 # Build bundles locally in ./bundle/ directory
 build-local: dev-install
 	cd ../dock2tauri && $(abspath $(TAURIDO)) --export-dir $(abspath bundle) ./examples/pwa-hello/Dockerfile 8088 80
+
+# Build bundles locally and launch the application
+build-local-launch: dev-install
+	cd ../dock2tauri && $(abspath $(TAURIDO)) --export-dir $(abspath bundle) --launch ./examples/pwa-hello/Dockerfile 8088 80
