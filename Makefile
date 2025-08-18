@@ -82,6 +82,61 @@ run: ## Run latest built application (detects OS and package type)
 	@echo "$(BLUE)🚀 Running latest Dock2Tauri build...$(NC)"
 	@./scripts/run-app.sh
 
+# Testing targets
+test: test-bash test-rust test-python ## Run all tests (bash, rust, python)
+	@echo "$(GREEN)✅ All tests completed$(NC)"
+
+test-e2e: test-playwright test-cypress ## Run all E2E tests (playwright, cypress)
+	@echo "$(GREEN)✅ All E2E tests completed$(NC)"
+
+test-all: test test-e2e ## Run all tests including E2E
+	@echo "$(GREEN)✅ All tests and E2E tests completed$(NC)"
+
+test-bash: ## Run Bash script tests
+	@echo "$(BLUE)🧪 Running Bash script tests...$(NC)"
+	@chmod +x tests/bash/test_scripts.sh
+	@./tests/bash/test_scripts.sh
+
+test-rust: ## Run Rust integration tests
+	@echo "$(BLUE)🧪 Running Rust integration tests...$(NC)"
+	@cd tests/integration && cargo test
+
+test-python: ## Run Python workflow tests
+	@echo "$(BLUE)🧪 Running Python workflow tests...$(NC)"
+	@cd tests/workflow && python3 test_build_install.py
+
+test-playwright: ## Run Playwright E2E tests
+	@echo "$(BLUE)🧪 Running Playwright E2E tests...$(NC)"
+	@cd tests/e2e && npm test
+
+test-playwright-ui: ## Run Playwright tests with UI
+	@echo "$(BLUE)🧪 Running Playwright E2E tests with UI...$(NC)"
+	@cd tests/e2e && npm run test:ui
+
+test-cypress: ## Run Cypress E2E tests
+	@echo "$(BLUE)🧪 Running Cypress E2E tests...$(NC)"
+	@cd tests/e2e && npx cypress run
+
+test-cypress-open: ## Open Cypress test runner
+	@echo "$(BLUE)🧪 Opening Cypress test runner...$(NC)"
+	@cd tests/e2e && npx cypress open
+
+test-setup: ## Setup test dependencies
+	@echo "$(BLUE)🔧 Setting up test dependencies...$(NC)"
+	@cd tests/e2e && npm install
+	@cd tests/e2e && npx playwright install
+	@echo "$(GREEN)✅ Test dependencies installed$(NC)"
+
+test-clean: ## Clean test outputs and dependencies
+	@echo "$(BLUE)🧹 Cleaning test outputs...$(NC)"
+	@rm -rf tests/bash/output/
+	@rm -rf tests/e2e/node_modules/
+	@rm -rf tests/e2e/test-results/
+	@rm -rf tests/e2e/playwright-report/
+	@rm -rf tests/integration/target/
+	@find tests/ -name "*.log" -delete
+	@echo "$(GREEN)✅ Test outputs cleaned$(NC)"
+
 # Quick launch presets
 nginx: ## Launch Nginx web server (port 8088)
 	@echo "$(GREEN)🌐 Launching Nginx as desktop app...$(NC)"
