@@ -6,6 +6,8 @@ Transform any Docker container into a native desktop application using Tauri.
 
 Dock2Tauri is a lightweight bridge that allows you to run any Docker container as a native desktop application. It provides a modern control panel interface and multiple ways to launch containerized applications with unified CLI across Bash, Python, and Node.js launchers.
 
+Dock2Tauri is also the canonical successor to the archived `taurido` and `tauridock` repositories. See [the Tauridock migration notes](docs/TAURIDOCK_MIGRATION.md) for retained capabilities and design decisions.
+
 ## ✨ Features
 
 - 🚀 **One-click Docker Launch**: Run containers as desktop apps instantly
