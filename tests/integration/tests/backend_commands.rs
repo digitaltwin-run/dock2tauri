@@ -8,9 +8,6 @@ use tokio::time::timeout;
 mod backend_tests {
     use super::*;
 
-    // Mock Tauri context for testing
-    struct MockTauriContext;
-
     #[tokio::test]
     async fn test_docker_containers_command() {
         // Test the get_docker_containers command
@@ -19,7 +16,6 @@ mod backend_tests {
         match result {
             Ok(containers) => {
                 // Should return a valid containers list (empty or populated)
-                assert!(containers.len() >= 0);
                 println!("✅ Found {} containers", containers.len());
             }
             Err(e) => {
@@ -49,6 +45,8 @@ mod backend_tests {
 
     #[tokio::test]
     async fn test_launch_container_command() {
+        remove_test_container("test-rust-container");
+
         // Test launching a lightweight container
         let result = launch_docker_container_impl(
             "hello-world".to_string(),
@@ -59,21 +57,22 @@ mod backend_tests {
         
         match result {
             Ok(output) => {
-                assert!(output.contains("hello-world") || output.contains("Started"));
+                assert!(output.contains("test-rust-container"));
                 println!("✅ Container launched successfully");
-                
-                // Cleanup - stop the container
-                let _ = stop_docker_container_impl("test-rust-container".to_string()).await;
             }
             Err(e) => {
                 // Docker might not be available
                 println!("⚠️ Container launch failed (expected if Docker unavailable): {}", e);
             }
         }
+
+        remove_test_container("test-rust-container");
     }
 
     #[tokio::test]
     async fn test_stop_container_command() {
+        remove_test_container("test-stop-container");
+
         // First try to launch a container, then stop it
         let launch_result = launch_docker_container_impl(
             "alpine".to_string(),
@@ -98,6 +97,8 @@ mod backend_tests {
                 }
             }
         }
+
+        remove_test_container("test-stop-container");
     }
 
     #[tokio::test]
@@ -237,6 +238,12 @@ mod backend_tests {
             .output();
 
         Ok(format!("Container {} stopped and removed", name))
+    }
+
+    fn remove_test_container(name: &str) {
+        let _ = Command::new("docker")
+            .args(["rm", "-f", name])
+            .output();
     }
 
     async fn get_system_info_impl() -> Result<String, String> {

@@ -443,8 +443,8 @@ ls -la /target/parent/directory
 
 **Solutions:**
 ```bash
-# Verify custom app name parsing in logs
-# Should show: "Using custom app name: MyApp"
+# Verify the normalized configuration without running Docker
+./scripts/dock2tauri.sh nginx:alpine 8088 80 --app-name="MyApp" --print-plan
 
 # Check .env configuration
 cat .env | grep CUSTOM_APP_NAME
@@ -456,8 +456,8 @@ cat .env | grep CUSTOM_APP_NAME
 
 #### ❌ Environment Configuration Issues
 **Symptoms:**
-- `.env` file not loaded
-- Default values not applied
+- `.env` values are absent from `--print-plan`
+- Default values are not applied
 
 **Solutions:**
 ```bash
@@ -468,11 +468,8 @@ cat .env
 # Recreate from example if corrupted
 cp .env.example .env
 
-# Check environment loading in logs
-# Should show: "✅ Configuration loaded from .env"
-
-# Manual verification
-source .env && echo $OUTPUT_DIR
+# Safe verification without sourcing shell code
+./scripts/dock2tauri.sh --print-plan
 ```
 
 ## Getting Help

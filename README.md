@@ -4,7 +4,7 @@ Transform any Docker container into a native desktop application using Tauri.
 
 ## 🎯 Overview
 
-Dock2Tauri is a lightweight bridge that allows you to run any Docker container as a native desktop application. It provides a modern control panel interface and multiple ways to launch containerized applications with unified CLI across Bash, Python, and Node.js launchers.
+Dock2Tauri is a lightweight bridge that allows you to run any Docker container as a native desktop application. Bash, legacy Python and Node.js entry points are compatibility wrappers over one tested `taurido` execution engine.
 
 Dock2Tauri is also the canonical successor to the archived `taurido` and `tauridock` repositories. See [the Tauridock migration notes](docs/TAURIDOCK_MIGRATION.md) for retained capabilities and design decisions.
 
@@ -470,12 +470,12 @@ Builds for specific target architectures:
 ```bash
 ./scripts/dock2tauri.sh nginx:alpine 8088 80 --build --target=x86_64-pc-windows-gnu
 ```
-Enable best-effort cross-target builds with `--cross` (Bash launcher). Cross builds require proper toolchains/sysroots and may fail without additional setup.
+Enable best-effort cross-target builds with `--cross`. Cross builds require proper toolchains/sysroots and may fail without additional setup.
 
 ## 🎯 Recent Improvements (2025)
 
 ### Enhanced Configuration System
-- **🔧 .env Configuration**: Centralized configuration through `.env.example` template with automatic loading and defaults
+- **🔧 .env Configuration**: Optional key/value configuration loaded without evaluating shell code
 - **📁 Custom Build Paths**: Support for custom output directories (`OUTPUT_DIR`) and filename prefixes (`CUSTOM_FILENAME`)
 - **🏷️ Custom App Names**: Override auto-generated app names with `CUSTOM_APP_NAME` for branded deployments
 - **📦 Multi-Location Output**: Copy binaries to additional directories with `ADDITIONAL_OUTPUT_DIRS`
@@ -535,12 +535,13 @@ Build and export bundles directly from a Dockerfile (served by `nginx:alpine`):
 
 ## 🔧 Unified CLI Interface
 
-All three launchers (Bash, Python, Node.js) now support the same flags and functionality:
+All launchers support the same flags because they normalize to the same JSON-serializable execution plan:
 
 ### Common Flags
 - `--build` / `-b`: Build Tauri release bundles instead of dev mode
 - `--target=<triple>`: Specify target architecture for cross-compilation
-- `--cross` (Bash only): Attempt best-effort cross-target builds (requires toolchains; may fail)
+- `--cross`: Attempt best-effort cross-target builds (requires toolchains; may fail)
+- `--print-plan`: Print the normalized plan without running Docker or Tauri
 - `--help` / `-h`: Show help information
  - `--health-url=<url>`: Override readiness URL (default: `http://localhost:HOST_PORT`)
  - `--timeout=<seconds>`: Readiness timeout (default: `30`)
@@ -660,7 +661,7 @@ Built bundles are saved to:
 - `src-tauri/target/release/bundle/` (native platform builds)
 - `src-tauri/target/<target-triple>/release/bundle/` (cross-platform builds)
 
-Additionally, the Bash and Python CLI export bundles to a friendly path under `dist/<platform>/` (e.g., `dist/linux-x64/`).
+All launchers export bundles through the canonical engine to `dist/<platform>/` (e.g., `dist/linux-x64/`).
 
 Supported bundle formats:
 - **Linux**: AppImage, .deb, .rpm
@@ -669,7 +670,7 @@ Supported bundle formats:
 
 ### Android (best-effort)
 
-If Android SDK is detected (`ANDROID_SDK_ROOT` or `ANDROID_HOME`), the Bash and Python CLI attempt to build an Android APK automatically during `--build`.
+If Android SDK is detected (`ANDROID_SDK_ROOT` or `ANDROID_HOME`), the canonical engine attempts to build an Android APK automatically during `--build`.
 
 Output: `dist/android-apk/`
 

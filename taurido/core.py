@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 
 BLUE = "\033[0;34m"
@@ -36,12 +36,24 @@ def log_error(msg: str) -> None:
 
 
 class Runner:
-    def __init__(self, base_dir: Optional[Path] = None, export_dir: Optional[Path] = None, launch_after_build: bool = False, list_bundles: bool = False) -> None:
+    def __init__(
+        self,
+        base_dir: Optional[Path] = None,
+        export_dir: Optional[Path] = None,
+        launch_after_build: bool = False,
+        list_bundles: bool = False,
+        app_name: Optional[str] = None,
+        filename_prefix: Optional[str] = None,
+        additional_output_dirs: Optional[Sequence[Path]] = None,
+    ) -> None:
         self.base_dir = Path(base_dir) if base_dir else Path.cwd()
         self.src_tauri = self.base_dir / "src-tauri"
         self.export_dir = Path(export_dir) if export_dir else self.base_dir / "dist"
         self.launch_after_build = launch_after_build
         self.list_bundles = list_bundles
+        self.app_name = app_name
+        self.filename_prefix = filename_prefix
+        self.additional_output_dirs = [Path(path) for path in (additional_output_dirs or [])]
         self.tauri_config_path: Optional[Path] = None
         self.container_name: Optional[str] = None
         # Candidate cross targets
@@ -116,6 +128,7 @@ class Runner:
         # Android best-effort
         self._build_android_best_effort()
         self._generate_dist_root_readme()
+        self._copy_to_additional_dirs()
         log_success(f"All available bundles exported to: {self.export_dir}")
         
         # List bundle contents if requested
@@ -269,12 +282,13 @@ class Runner:
         elif os_name.startswith("msys") or os_name.startswith("mingw") or os_name.startswith("cygwin") or os_name == "windows":
             targets = ["nsis", "msi"]
 
-        product_name = re.sub(r'[/:*?"<>|]', "", docker_image.split(":")[0])
+        sanitized_name = re.sub(r'[/:*?"<>|]', "", docker_image.split(":")[0])
+        product_name = self.app_name or f"Dock2Tauri-{sanitized_name}"
         identifier = re.sub(r"[^a-zA-Z0-9]", "", docker_image)
 
         cfg = {
             "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-            "productName": f"Dock2Tauri-{product_name}",
+            "productName": product_name,
             "version": "1.0.0",
             "identifier": f"com.dock2tauri.{identifier}",
             "build": {
@@ -287,7 +301,7 @@ class Runner:
                 "security": {"csp": None},
                 "windows": [
                     {
-                        "title": f"Dock2Tauri-{docker_image}",
+                        "title": product_name,
                         "width": 1200,
                         "height": 800,
                         "minWidth": 600,
@@ -405,7 +419,7 @@ class Runner:
         for path in src_dir.rglob("*"):
             try:
                 if path.is_file():
-                    shutil.copy2(path, dest_dir / path.name)
+                    shutil.copy2(path, dest_dir / self._artifact_name(path))
             except Exception:
                 pass
         try:
@@ -420,6 +434,34 @@ class Runner:
             pass
         log_success(f"Exported bundles to {dest_dir}")
         self._generate_platform_readme(dest_dir, platform_folder)
+
+    def _artifact_name(self, path: Path) -> str:
+        if not self.filename_prefix:
+            return path.name
+        safe_prefix = re.sub(r"[^A-Za-z0-9._-]", "-", self.filename_prefix).strip(".-")
+        return f"{safe_prefix}-{path.name}" if safe_prefix else path.name
+
+    def _copy_to_additional_dirs(self) -> None:
+        if not self.additional_output_dirs or not self.export_dir.exists():
+            return
+        export_root = self.export_dir.resolve()
+        for destination in self.additional_output_dirs:
+            destination_root = destination.resolve()
+            try:
+                destination_root.relative_to(export_root)
+            except ValueError:
+                pass
+            else:
+                log_warning(f"Skipping additional output inside export directory: {destination}")
+                continue
+            destination.mkdir(parents=True, exist_ok=True)
+            for source in self.export_dir.iterdir():
+                target = destination / source.name
+                if source.is_dir():
+                    shutil.copytree(source, target, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(source, target)
+            log_success(f"Copied artifacts to: {destination}")
 
     def _map_target_to_platform(self, t: str) -> str:
         if not t:

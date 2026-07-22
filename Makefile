@@ -90,7 +90,7 @@ test: test-bash test-rust test-python test-taurido ## Run all tests (bash, rust,
 	@echo "$(GREEN)✅ All tests completed$(NC)"
 
 test-taurido: ## Run unit tests for the installable taurido CLI
-	@python3 -m pytest tests/test_taurido_cli.py
+	@python3 -m pytest tests/test_taurido_cli.py tests/test_launcher_contract.py
 
 test-e2e: test-playwright test-cypress ## Run all E2E tests (playwright, cypress)
 	@echo "$(GREEN)✅ All E2E tests completed$(NC)"

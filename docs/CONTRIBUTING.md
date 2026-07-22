@@ -226,15 +226,14 @@ refactor(config): extract shared Tauri config generation logic
 
 ### Launcher Parity
 
-**Critical requirement**: All new features must maintain parity across launchers unless technically impossible.
+All launcher behavior belongs in the canonical `taurido` engine. Compatibility wrappers must remain thin and are verified through normalized execution-plan tests.
 
 When adding a new feature:
-1. Implement in Bash launcher first (reference implementation)
-2. Port to Python launcher
-3. Port to Node.js launcher
-4. Update Makefile targets if applicable
-5. Add examples to README.md
-6. Test all implementations
+1. Add the option to `taurido.cli` and `BuildPlan`.
+2. Implement it once in `taurido.core`.
+3. Keep legacy flag translation only when backward compatibility requires it.
+4. Extend `tests/test_launcher_contract.py`.
+5. Update Makefile targets and README examples when applicable.
 
 ### Configuration System
 

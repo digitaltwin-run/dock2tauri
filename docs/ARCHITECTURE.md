@@ -30,25 +30,20 @@ Dock2Tauri is a bridge that transforms Docker containers into native desktop app
 
 ### 1. Launchers (Frontend Interface)
 
-Multiple entry points providing unified CLI across different environments:
+Multiple compatibility entry points normalize arguments into one `BuildPlan` and execute the same `taurido` engine:
 
 #### Bash Script (`scripts/dock2tauri.sh`)
-- **Primary launcher** with full feature set
-- Intelligent cross-compilation gating
-- Dynamic bundler detection (DEB/RPM/AppImage)
-- Auto-skip problematic targets in cross-mode
-- Environment-based configuration
+- Thin wrapper that discovers Python and forwards arguments unchanged
+- Preserves the documented positional interface
 
 #### Python CLI (`scripts/dock2tauri.py` + `taurido` package)
-- Installable Python package maintained in this repository
-- Same feature parity as Bash launcher
-- Project root detection and management
-- Cross-platform Python compatibility
+- Canonical `taurido` parser, execution plan and build engine
+- Legacy flag-based script translates arguments without duplicating Docker/Tauri logic
+- `--print-plan` exposes normalized JSON for contract tests and integrations
 
 #### Node.js Script (`scripts/dock2tauri.js`)
-- JavaScript/Node.js integration
-- Consistent API with other launchers
-- JSON-based configuration handling
+- Thin process wrapper around the canonical Python engine
+- Uses the same arguments and produces the same normalized plan
 
 #### Makefile Targets
 - Quick-start presets (nginx, grafana, jupyter, portainer)
@@ -76,15 +71,15 @@ Multiple entry points providing unified CLI across different environments:
 ┌─────────────────┐    ┌──────────────────────┐    ┌─────────────────┐
 │  CLI Arguments  │───▶│  Argument Processor   │───▶│  Build System   │
 │                 │    │                      │    │                 │
-│ --output-dir=   │    │ • parse_custom_opts() │    │ • EXPORT_DIR    │
-│ --app-name=     │    │ • FILTERED_ARGS       │    │ • tauri config  │
-│ --filename=     │    │ • Environment sync    │    │ • Bundle naming │
-│ --copy-to=      │    │ • Path resolution     │    │ • Multi-copy    │
+│ --output-dir=   │    │ • argparse             │    │ • EXPORT_DIR    │
+│ --app-name=     │    │ • BuildPlan            │    │ • tauri config  │
+│ --filename=     │    │ • contract validation  │    │ • Bundle naming │
+│ --copy-to=      │    │ • path resolution      │    │ • Multi-copy    │
 └─────────────────┘    └──────────────────────┘    └─────────────────┘
 ```
 
 **Configuration Flow:**
-1. **Environment Loading** (`.env` → defaults)
+1. **Safe Environment Loading** (`.env` key/value parser → defaults)
 2. **CLI Argument Parsing** (custom options extraction)
 3. **Configuration Merge** (CLI overrides environment)
 4. **Path Resolution** (absolute/relative path handling)
@@ -93,8 +88,9 @@ Multiple entry points providing unified CLI across different environments:
 7. **Multi-Location Distribution** (optional copying)
 
 **Key Features:**
-- **Environment Integration**: `.env.example` → `.env` automatic setup
-- **Advanced Parsing**: FILTERED_ARGS approach for clean separation
+- **Environment Integration**: optional `.env` file without shell evaluation
+- **Single Parser**: Bash, Python and Node resolve to the same `BuildPlan`
+- **Contract Testing**: `--print-plan` verifies launcher parity without Docker
 - **Dynamic Configuration**: Runtime tauri.conf.json modification
 - **Path Flexibility**: Absolute/relative output directory support
 - **Multi-Deployment**: Comma-separated copy destinations
