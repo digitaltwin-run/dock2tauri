@@ -40,7 +40,7 @@ Multiple entry points providing unified CLI across different environments:
 - Environment-based configuration
 
 #### Python CLI (`scripts/dock2tauri.py` + `taurido` package)
-- Standalone Python package for integration into Python workflows
+- Installable Python package maintained in this repository
 - Same feature parity as Bash launcher
 - Project root detection and management
 - Cross-platform Python compatibility

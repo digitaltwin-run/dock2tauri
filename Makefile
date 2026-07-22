@@ -22,7 +22,7 @@ YELLOW = \033[1;33m
 BLUE = \033[0;34m
 NC = \033[0m # No Color
 
-.PHONY: help install install-deps install-deps-dry-run test-install dev build run clean test nginx grafana jupyter portainer launch stop-all list logs status examples
+.PHONY: help install install-python install-deps install-deps-dry-run test-install dev build run clean test test-taurido test-launchers nginx grafana jupyter portainer launch stop-all list logs status examples
 
 # Default target
 all: help
@@ -51,6 +51,9 @@ install: ## Install dependencies and setup project
 	@bash scripts/install_deps.sh $(INSTALL_DEPS_FLAGS)
 	@chmod +x scripts/*.sh scripts/*.py scripts/*.js
 	@echo "$(GREEN)✅ Installation complete!$(NC)"
+
+install-python: ## Install the taurido Python CLI from this repository
+	@python3 -m pip install -e .
 
 install-deps: ## Install system bundling deps (APPIMAGE=1 ARM64=1 YES=1 to enable extras)
 	@echo "$(BLUE)📦 Installing system bundling dependencies...$(NC)"
@@ -83,8 +86,11 @@ run: ## Run latest built application (detects OS and package type)
 	@./scripts/run-app.sh
 
 # Testing targets
-test: test-bash test-rust test-python ## Run all tests (bash, rust, python)
+test: test-bash test-rust test-python test-taurido ## Run all tests (bash, rust, Python)
 	@echo "$(GREEN)✅ All tests completed$(NC)"
+
+test-taurido: ## Run unit tests for the installable taurido CLI
+	@python3 -m pytest tests/test_taurido_cli.py
 
 test-e2e: test-playwright test-cypress ## Run all E2E tests (playwright, cypress)
 	@echo "$(GREEN)✅ All E2E tests completed$(NC)"
@@ -189,7 +195,7 @@ list: ## List active dock2tauri containers
 	@docker ps --filter "name=dock2tauri-*" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
 
 # Testing
-test: test-scripts test-integration ## Run all tests
+test-launchers: test-scripts test-integration ## Run launcher integration tests
 
 test-scripts: ## Test all script launchers (bash, python, nodejs)
 	@echo "$(BLUE)🧪 Testing script launchers...$(NC)"

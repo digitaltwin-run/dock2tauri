@@ -574,7 +574,11 @@ For the Python CLI (`taurido`), the same default applies: Dockerfile input witho
 ### Method 2: Python CLI (taurido)
 ![img_1.png](img_1.png)
 
-The standalone Python package `taurido` provides a CLI with the same behavior as the Bash launcher, including dynamic Linux bundler detection and defaults for Dockerfile input.
+The `taurido` package is maintained in this repository and provides a CLI with the same behavior as the Bash launcher, including dynamic Linux bundler detection and defaults for Dockerfile input.
+
+```bash
+python3 -m pip install -e .
+```
 
 ```bash
 # From repo root (contains src-tauri/)
@@ -590,6 +594,7 @@ TAURIDO_PROJECT_ROOT=./dock2tauri taurido ./examples/pwa-hello/Dockerfile 8088 8
 Notes:
 - If the first argument is a Dockerfile and `--build` is NOT provided, `taurido` defaults to building and exporting bundles into `dist/`.
 - `--cross` is supported as best-effort when proper toolchains are installed.
+- The former `digitaltwin-run/taurido` repository is retained as an archived history and redirects development here.
 
 ### Method 3: Python Script
 ```bash
