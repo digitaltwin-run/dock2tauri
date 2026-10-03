@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Willman Desktop Hub</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
+    #loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #334155;
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+    .error-msg {
+      color: #f87171;
+      margin-top: 12px;
+      display: none;
+    }
+    button {
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <div class="spinner"></div>
+    <h2>Łączenie z Willman Hub...</h2>
+    <p>Oczekiwanie na lokalną usługę Willmana pod adresem <code>http://127.0.0.1:8780/</code></p>
+    <div id="error" class="error-msg">
+      Nie udało się połączyć z lokalnym hubem Willman.<br>
+      Upewnij się, że usługa została uruchomiona: <code>willman start</code>
+    </div>
+    <button id="retry-btn" onclick="checkConnection()">Ponów próbę</button>
+  </div>
+  <iframe id="hub-frame" src=""></iframe>
+
+  <script>
+    const WILLMAN_URL = 'http://127.0.0.1:8780/';
+    let attempts = 0;
+
+    async function checkConnection() {
+      document.getElementById('error').style.display = 'none';
+      try {
+        const res = await fetch(WILLMAN_URL + 'v1/health', { method: 'GET', mode: 'no-cors' });
+        loadIframe();
+      } catch (e) {
+        attempts++;
+        if (attempts > 5) {
+          document.getElementById('error').style.display = 'block';
+        } else {
+          setTimeout(checkConnection, 1500);
+        }
+      }
+    }
+
+    function loadIframe() {
+      const frame = document.getElementById('hub-frame');
+      const loader = document.getElementById('loader');
+      frame.src = WILLMAN_URL;
+      frame.onload = () => {
+        loader.style.display = 'none';
+        frame.style.display = 'block';
+      };
+      // Fallback display if onload is blocked by same-origin restrictions
+      setTimeout(() => {
+        loader.style.display = 'none';
+        frame.style.display = 'block';
+      }, 1000);
+    }
+
+    checkConnection();
+  </script>
+</body>
+</html>
