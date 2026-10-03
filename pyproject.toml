@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "taurido"
-version = "0.1.0"
+version = "1.0.0"
 description = "Python CLI for bridging Dockerized web apps into Tauri desktop apps"
 readme = "README.md"
-authors = [{ name = "digitaltwin-run" }]
-license = { text = "MIT" }
+authors = [{ name = "digitaltwin-run" }, {name = "Tom Sapletta",email = "tom@sapletta.com"}]
+license = "Apache-2.0"
 requires-python = ">=3.8"
 dependencies = []
 
@@ -25,6 +25,8 @@ dev = [
   "pytest>=7",
   "build>=1",
   "ruff>=0.5",
+  "goal>=2.1.0; python_version >= '3.12'",
+  "costs>=0.1.53; python_version >= '3.9'",
 ]
 
 [tool.pytest.ini_options]
@@ -34,3 +36,16 @@ python_files = ["test_taurido_*.py", "test_launcher_contract.py"]
 [tool.ruff]
 target-version = "py38"
 line-length = 120
+
+[tool.costs]
+# AI Cost tracking configuration
+badge = true
+update_readme = true
+readme_path = "README.md"
+default_model = "openrouter/qwen/qwen3-coder-next"
+analysis_mode = "byok"
+full_history = true
+max_commits = 500
+
+# Cost thresholds for badge colors (USD)
+badge_color_thresholds = { low = 1.0, medium = 5.0, high = 10.0, critical = 50.0 }
